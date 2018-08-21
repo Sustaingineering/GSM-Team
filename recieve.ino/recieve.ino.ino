@@ -116,7 +116,7 @@ void setup() {
 
 void loop()
 {
-   Serial.println(F("Waiting for SMS"));
+   //Serial.println(F("Waiting for SMS"));
    while (! Serial.available() ) { 
     if(time_sms())
     {
@@ -180,7 +180,7 @@ void check_get_sms()
         Serial.println(vars[4]);
         Serial.print(F("Water Breaker Flag: "));
         Serial.println(vars[5]);
-
+/*
         //Read file from memory
         //File is overwritten when writing to SD, so we must first retrieve the current contents of the file
         char* data_inmem="";
@@ -215,6 +215,9 @@ void check_get_sms()
           // if the file didn't open, print an error:
           Serial.println("error opening data.txt");
         }
+        */
+
+        
         
         Serial.print(" ("); Serial.print(smslen); 
         Serial.println(F("*****"));
