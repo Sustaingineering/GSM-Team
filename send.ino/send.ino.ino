@@ -58,7 +58,7 @@ void setup() {
 
   while (!Serial);    // wait till serial gets initialized
 
-  Serial.begin(115200); //Baud rate
+  Serial.begin(2400); //Baud rate
   Serial.println(F("Sustaingineering 3G TxRx!!"));
   Serial.println(F("Initializing....(May take 3 seconds)"));
 
@@ -92,78 +92,57 @@ void setup() {
 }
 void loop()
 {
-   Serial.println(F("Hit enter to wake up Fona"));
-   while (! Serial.available() ) { 
-       //Do other stuff
-   }
-  send_sms();   
+  float sensorValue = analogRead(A2) ;
+  // Convert the analog reading ( which goes from 0 - 1023) to a voltage (0 - 5V):
+  float voltage = voltage /1023;
+        voltage = sensorValue *5000;//(in mv)
+        
+  float volt = voltage-1670;//(while cold conjuction is 22 degree 
+                             //   the voltage cross thermalcouple is 1.67v)
+        volt=  volt / 150; //(opamp apmplified 150 times)
+  float temp = (volt)/0.041 +22  ;//( 1 degree = 0.0404 mv in K type )
+  
+  Serial.println(temp);
+
+  float LoadVoltage=-1;
+  float LoadCurrent=-1;
+  float Power=-1;
+  float AtmTemp=-1;
+  float SolTemp=temp;
+  bool WaterBreakerFlag=false;
+  
+  send_sms(LoadVoltage, LoadCurrent,Power,AtmTemp,SolTemp,WaterBreakerFlag);
+
+  while(1)
+  {
+  }
 } 
 
-void send_sms()
+void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag)
    { // send an SMS!
         char message[141];
         bool loop=true;
         while(loop)
         {
           flushSerial();    // THIS IS IMPORTANT! OTHERWISE what you typed in might be missing in what you send
-          Serial.println(sendto);
-          //Temporary solution to demonstrate ability to text floats in .csv format
-          Serial.print(F("Press 1 to enter a message, or 2 to enter data:\t"));
-          readline(message, 140);
-          Serial.print(F("\n\n"));
-          if(message[0]=='1')
-          {
-            loop=false;
-            Serial.print(F("Type out one-line message (140 char): "));
-            readline(message, 140); //Gets message from console
-          }
-          else if(message[0]=='2')
-          {
-            loop=false;
-            float LoadVoltage=0;
-            float LoadCurrent=0;
-            float Power=0;
-            float AtmTemp=0;
-            float SolTemp=0;
-            bool WaterBreakerFlag=false;
-            Serial.print(F("Enter Load Voltage:\t"));
-            readline(message,140);
-            LoadVoltage=atof(message);
-            Serial.println(LoadVoltage);
-            Serial.print(F("Enter Load Current:\t"));
-            readline(message,140);
-            LoadCurrent=atof(message);
-            Serial.println(LoadCurrent);
-            Serial.print(F("Enter Power:\t"));
-            readline(message,140);
-            Power=atof(message);
-            Serial.println(Power);
-            Serial.print(F("Enter Atmospheric Temperature:\t"));
-            readline(message,140);
-            AtmTemp=atof(message);
-            Serial.println(AtmTemp);
-            Serial.print(F("Enter Solar Panel Temperature:\t"));
-            readline(message,140);
-            SolTemp=atof(message);
-            Serial.println(SolTemp);
-            Serial.print(F("Enter Water Braker Flag (0/1):\t"));
-            readline(message,140);
-            WaterBreakerFlag=(int)(message[0]-'0');
-            Serial.println(WaterBreakerFlag);
-            Serial.print(F("\n"));
-            
-            String str;
-            str=(String)(LoadVoltage)+","+(String)(LoadCurrent)+","+(String)(Power)+","+(String)(AtmTemp)+","+(String)(SolTemp)+","+(String)(WaterBreakerFlag);
-            str.toCharArray(message, 141);
-          }
+          loop=false;
+           
+          String str;
+          str=(String)(LoadVoltage)+","+(String)(LoadCurrent)+","+(String)(Power)+","+(String)(AtmTemp)+","+(String)(SolTemp)+","+(String)(WaterBreakerFlag);
+          str.toCharArray(message, 141);
         }
         Serial.print(F("Your message is: "));
         Serial.println(message);
-        if (!fona.sendSMS(sendto, message)) {
-          Serial.println(F("Failed"));
-        } else {
-          Serial.println(F("Sent!"));
+        Serial.print(F("Value of message sent status: "));
+        if(fona.sendSMS(sendto, message)==0)
+        {
+          Serial.println(F("SMS sending failed."));
         }
+        else
+        {
+          Serial.println(F("SMS sending succeeded."));
+        }
+        
    }
 
 void flushSerial() {
