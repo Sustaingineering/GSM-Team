@@ -1,16 +1,31 @@
 {
-	"Load Voltage": "1",
-	"Load Current": "2",
-	"Power": "3",
-	"Atmospheric Temperature": "4",
-	"Solar Panel Temperature": "5",
-	"Water Breaker Flag": "6",
+	"Load Voltage": "7",
+	"Load Current": "7",
+	"Power": "7",
+	"Atmospheric Temperature": "7",
+	"Solar Panel Temperature": "77",
 }
 {
 	"Load Voltage": "1",
 	"Load Current": "2",
 	"Power": "3",
-	"Atmospheric Temperature": "4",
+	"Atmospheric Temperature": "34",
 	"Solar Panel Temperature": "5",
 	"Water Breaker Flag": "6",
+}
+{
+	"Load Voltage": "7",
+	"Load Current": "7",
+	"Power": "7",
+	"Atmospheric Temperature": "7",
+	"Solar Panel Temperature": "77",
+	"Water Breaker Flag": "7",
+}
+{
+	"Load Voltage": "9",
+	"Load Current": "9",
+	"Power": "9",
+	"Atmospheric Temperature": "999",
+	"Solar Panel Temperature": "9",
+	"Water Breaker Flag": "9",
 }

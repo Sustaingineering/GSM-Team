@@ -3,6 +3,7 @@ import csv
 import json
 import re
 import matplotlib.pyplot as plt
+import unicodedata
 # import pandas as pd
  
 portPath = "COM1"	   # Must match value shown on Arduino IDE
@@ -10,7 +11,7 @@ baud = 115200					 # Must match Arduino baud rate
 timeout = 999					  # Seconds
 c_filename = "data.csv"
 j_filename = "data.json"
-max_num_readings = 999
+max_num_readings = 6
 num_signals = 1
 
 sms=" "
@@ -24,17 +25,9 @@ def create_serial_obj(portPath, baud_rate, tout):
 	and returns a pyserial object.
 	"""
 	return serial.Serial(portPath, baud_rate, timeout = tout)
-	
-def read_serial_data(serial):
-	"""
-	Given a pyserial object (serial). Outputs a list of lines read in
-	from the serial port
-	"""
+
+def initialization(serial):
 	serial.flushInput()
-	
-	serial_data = []
-	readings_left = True
-	timeout_reached = False
 	
 	print "Please wait..."
 	
@@ -45,23 +38,40 @@ def read_serial_data(serial):
 		
 	print "Ready to begin"
 	
+def read_serial_data(serial):
+	"""
+	Given a pyserial object (serial). Outputs a list of lines read in
+	from the serial port
+	"""
+	
+	serial.flushInput()
+	
+	serial_data = []
+	readings_left = True
+	timeout_reached = False
+	
 	while readings_left and not timeout_reached:
 		serial_line = serial.readline()
 		# print serial_line
 		sms=""
 		for s in Fields:
+			print "Serial line: "+str(serial_line)
+			print "Finding: "+str(s+": ")
+			print "Found="+str(serial_line.find(s+": "))
 			if serial_line.find(s+": ")==0:
 				serial_data.append(serial_line.partition(": ")[2])
+				print "Creating Temp: "
 				temp=""+s+": "+serial_data[-1]
 				print temp
 				sms=sms+temp+","
-		if serial_line == '':
-			timeout_reached = True
-		else:
-			serial_data.append(serial_line)
-			if len(serial_data) == max_num_readings:
-				readings_left = False
-	print sms
+				
+				# serial_data.append(serial_line)
+				print "Length serial_data: "+str(len(serial_data))
+				print "serial_data: "+str(serial_data) 
+				if len(serial_data) == max_num_readings:
+					readings_left = False
+	print "SMS: \n"+str(sms)
+	return serial_data
 	
 	
  
@@ -83,13 +93,19 @@ def clean_serial_data(data):
 	Given something like: ['0.5000,33\r\n', '1.0000,283\r\n']
 	Returns: [[0.5,33.0], [1.0,283.0]]
 	"""
-	clean_data = []
+	clean_data=[]
+	for ascii in data:
+		s=unicode(ascii, "utf-8")
+		clean_data.append(("".join(ch for ch in s if unicodedata.category(ch)[0]!="C")).encode("utf-8"))
 	
-	for line in data:
-		line_data = re.findall("\d*\.\d*|\d*",line) # Find all digits
-		line_data = [float(element) for element in line_data if is_number(element)] # Convert strings to float
-		if len(line_data) >= 2:
-			clean_data.append(line_data)
+	# clean_data = []
+	
+	# for line in data:
+		# line_data = re.findall("\d*\.\d*|\d*",line) # Find all digits
+		# line_data = [float(element) for element in line_data if is_number(element)] # Convert strings to float
+		# if len(line_data) >= 2:
+			# clean_data.append(line_data)
+	print "Clean data: "+str(clean_data)
  
 	return clean_data		   
  
@@ -123,6 +139,7 @@ def save_to_json(data, j_filename):
 		jsondata+=",\n"
 	jsondata+="}\n"
 	fw.write(jsoncontent+jsondata)
+	fw.close()
 	
 def gen_col_list(num_signals):
 	"""
@@ -168,16 +185,18 @@ def simple_plot(csv_file, columns, headers):
 print "Creating serial object..."
 serial_obj = create_serial_obj(portPath, baud, timeout)
 
+initialization(serial_obj)
+
 while 1:
 
 	print "Reading serial data..."
-	read_serial_data(serial_obj)
-	print "Length: "+len(serial_data)
+	serial_data=read_serial_data(serial_obj)
+	print "Length: "+str(len(serial_data))
 
 	print "Cleaning data..."
 	clean_data =  clean_serial_data(serial_data)
 
-	clean_data=[1,2,3,4,5,6]
+	# clean_data=[1,2,3,4,5,6]
 	# print "Saving to csv..."
 	# save_to_csv(clean_data, c_filename)
 
