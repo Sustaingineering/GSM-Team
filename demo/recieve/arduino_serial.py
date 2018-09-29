@@ -2,14 +2,14 @@ import serial
 import re
 import unicodedata
 import Tkinter	
+from Tkinter import *
 
 portPath = "COM1"	   # Must match value shown on Arduino IDE
 baud = 115200					 # Must match Arduino baud rate
-timeout = 999					  # Seconds
+timeout_const = 10					  # Seconds
+timeout=timeout_const
 max_num_readings = 1
 num_signals = 1
-
-sms=" "
  
 Fields = ["Temperature"]
  
@@ -40,33 +40,21 @@ def read_serial_data(serial):
 	
 	serial.flushInput()
 	
-	serial_data = []
 	readings_left = True
 	timeout_reached = False
 	
+	sms=""
+	timeout=timeout_const
+	
 	while readings_left and not timeout_reached:
 		serial_line = serial.readline()
-		sms=""
 		if serial_line.find("Temperature: ")==0:
 			sms=serial_line.partition(": ")[2]
-		if len(serial_data) == max_num_readings:
-			readings_left = False
-	print serial_data
-	return serial_data
-		   
-def clean_serial_data(data):
-	"""
-	Given a list of serial lines (data). Removes all characters.
-	Returns the cleaned list of lists of digits.
-	Given something like: ['0.5000,33\r\n', '1.0000,283\r\n']
-	Returns: [[0.5,33.0], [1.0,283.0]]
-	"""
-	clean_data=[]
-	for ascii in data:
-		s=unicode(ascii, "utf-8")
-		clean_data.append(("".join(ch for ch in s if unicodedata.category(ch)[0]!="C")).encode("utf-8"))
- 
-	return clean_data		   
+		timeout-=1
+		if(timeout==0):
+			timeout_reached=True
+	print sms
+	return sms   
  
 class app(Tkinter.Tk):	
 	
@@ -88,16 +76,23 @@ class app(Tkinter.Tk):
 		self.x += 1
 		print "Reading serial data..."
 		serial_data=read_serial_data(self.serial_obj)
-		print "Length: "+str(len(serial_data))
-
-		print "Cleaning data..."
-		clean_data =  clean_serial_data(serial_data)
-		print("Temperature: "+clean_data)
-		self.after(1000, self.callback)  
+		if(serial_data):
+			print("Temperature: "+serial_data)
+			text="Temperature: "+serial_data
+			canvas.itemconfigure(Label1,text=text)
+		self.after(100, self.callback)  
 	
 if __name__=="__main__":
 	app=app(None)
 	app.title('Display SMS')
+	screen_width=app.winfo_screenwidth()
+	screen_height=app.winfo_screenheight()
+	canvas = Canvas(app, height=screen_height, width=screen_width, relief=RAISED, bg='black')
+	canvas.grid()
+	canvas.pack()
+	Display_box1 = canvas.create_rectangle(screen_width, screen_height, 0, 0,  fill = 'black')
+	Label1 = canvas.create_text(screen_width/2, screen_height/2, text="Temperature: ", font=('Impact', -100,), fill="white")
+
 	app.mainloop()
 	
 	
