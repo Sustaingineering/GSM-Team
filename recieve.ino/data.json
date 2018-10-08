@@ -1,31 +1,26 @@
 {
-	"Load Voltage": "7",
-	"Load Current": "7",
-	"Power": "7",
-	"Atmospheric Temperature": "7",
-	"Solar Panel Temperature": "77",
+	"Number": "+16472333143"",
+	"Date": "18/10/08",
+	"Time": 14:32:23-28"",
+	"Data":[
+		"Load Voltage": "9",
+		"Load Current": "8",
+		"Power": "7",
+		"Atmospheric Temperature": "6",
+		"Solar Panel Temperature": "5",
+		"Water Breaker Flag": "4",
+	]
 }
 {
-	"Load Voltage": "1",
-	"Load Current": "2",
-	"Power": "3",
-	"Atmospheric Temperature": "34",
-	"Solar Panel Temperature": "5",
-	"Water Breaker Flag": "6",
-}
-{
-	"Load Voltage": "7",
-	"Load Current": "7",
-	"Power": "7",
-	"Atmospheric Temperature": "7",
-	"Solar Panel Temperature": "77",
-	"Water Breaker Flag": "7",
-}
-{
-	"Load Voltage": "9",
-	"Load Current": "9",
-	"Power": "9",
-	"Atmospheric Temperature": "999",
-	"Solar Panel Temperature": "9",
-	"Water Breaker Flag": "9",
+	"Number": "+16472333143"",
+	"Date": "18/10/08",
+	"Time": 14:32:52-28"",
+	"Data":[
+		"Load Voltage": "8",
+		"Load Current": "7",
+		"Power": "58",
+		"Atmospheric Temperature": "6",
+		"Solar Panel Temperature": "5",
+		"Water Breaker Flag": "8",
+	]
 }

@@ -11,7 +11,6 @@ baud = 115200					 # Must match Arduino baud rate
 timeout = 999					  # Seconds
 c_filename = "data.csv"
 j_filename = "data.json"
-max_num_readings = 6
 num_signals = 1
 
 sms=" "
@@ -19,6 +18,8 @@ sms=" "
 # Fields = ["Load Voltage: ", "Load Current: ", "Power: ", "Atmospheric Temperature: ", "Solar Panel Temperature: ", "Water Breaker Flag: "]
 Fields = ["Load Voltage", "Load Current", "Power", "Atmospheric Temperature", "Solar Panel Temperature", "Water Breaker Flag"]
  
+max_num_readings = len(Fields)+3
+
 def create_serial_obj(portPath, baud_rate, tout):
 	"""
 	Given the port path, baud rate, and timeout value, creates
@@ -49,28 +50,40 @@ def read_serial_data(serial):
 	serial_data = []
 	readings_left = True
 	timeout_reached = False
-	
+	read_header=False
 	while readings_left and not timeout_reached:
 		serial_line = serial.readline()
+		print(serial_line)
+		if(not read_header and serial_line.find("+CMGR: ")==0):
+			print("Found CMGR")
+			temp_array=serial_line.split(",")
+			for i in temp_array:
+				print("Next: ")
+				print(str(i))
+			serial_data.append(temp_array[1]) #Append sender's phone number
+			serial_data.append(temp_array[3]) #Append date SMS was recieved
+			serial_data.append(temp_array[4]) #Append time SMS was recieved
+			print("serial_data is: "+str(serial_data))
+			read_header=True
 		# print serial_line
 		sms=""
 		for s in Fields:
-			print "Serial line: "+str(serial_line)
-			print "Finding: "+str(s+": ")
-			print "Found="+str(serial_line.find(s+": "))
+			#print "Serial line: "+str(serial_line)
+			#print "Finding: "+str(s+": ")
+			#print "Found="+str(serial_line.find(s+": "))
 			if serial_line.find(s+": ")==0:
 				serial_data.append(serial_line.partition(": ")[2])
-				print "Creating Temp: "
+				#print "Creating Temp: "
 				temp=""+s+": "+serial_data[-1]
-				print temp
+				#print temp
 				sms=sms+temp+","
 				
 				# serial_data.append(serial_line)
-				print "Length serial_data: "+str(len(serial_data))
+				#print "Length serial_data: "+str(len(serial_data))
 				print "serial_data: "+str(serial_data) 
 				if len(serial_data) == max_num_readings:
 					readings_left = False
-	print "SMS: \n"+str(sms)
+	#print "SMS: \n"+str(sms)
 	return serial_data
 	
 	
@@ -132,11 +145,22 @@ def save_to_json(data, j_filename):
 	fr.close()
 	fw=open(j_filename, "w")
 	jsondata="{\n"
+	jsondata+="\t\"Number\": "
+	jsondata+=str(data[0])
+	jsondata+="\",\n"
+	jsondata+="\t\"Date\": "
+	jsondata+=str(data[1])
+	jsondata+="\",\n"
+	jsondata+="\t\"Time\": "
+	jsondata+=str(data[2])
+	jsondata+="\",\n"
+	jsondata+="\t\"Data\":[\n"
 	for i in range(len(Fields)):
-		jsondata+="\t"
+		jsondata+="\t\t"
 		jsondata+="\""+Fields[i]+"\": "
-		jsondata+="\""+str(data[i])+"\""
+		jsondata+="\""+str(data[i+3])+"\""
 		jsondata+=",\n"
+	jsondata+="\t]\n"
 	jsondata+="}\n"
 	fw.write(jsoncontent+jsondata)
 	fw.close()
