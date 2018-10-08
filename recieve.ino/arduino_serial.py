@@ -55,15 +55,10 @@ def read_serial_data(serial):
 		serial_line = serial.readline()
 		print(serial_line)
 		if(not read_header and serial_line.find("+CMGR: ")==0):
-			print("Found CMGR")
 			temp_array=serial_line.split(",")
-			for i in temp_array:
-				print("Next: ")
-				print(str(i))
-			serial_data.append(temp_array[1]) #Append sender's phone number
-			serial_data.append(temp_array[3]) #Append date SMS was recieved
-			serial_data.append(temp_array[4]) #Append time SMS was recieved
-			print("serial_data is: "+str(serial_data))
+			serial_data.append(temp_array[1].replace("\"","")) #Append sender's phone number
+			serial_data.append(temp_array[3].replace("\"","")) #Append date SMS was recieved
+			serial_data.append(temp_array[4].replace("\"","")) #Append time SMS was recieved
 			read_header=True
 		# print serial_line
 		sms=""
@@ -145,13 +140,13 @@ def save_to_json(data, j_filename):
 	fr.close()
 	fw=open(j_filename, "w")
 	jsondata="{\n"
-	jsondata+="\t\"Number\": "
+	jsondata+="\t\"Number\": \""
 	jsondata+=str(data[0])
 	jsondata+="\",\n"
-	jsondata+="\t\"Date\": "
+	jsondata+="\t\"Date\": \""
 	jsondata+=str(data[1])
 	jsondata+="\",\n"
-	jsondata+="\t\"Time\": "
+	jsondata+="\t\"Time\": \""
 	jsondata+=str(data[2])
 	jsondata+="\",\n"
 	jsondata+="\t\"Data\":[\n"

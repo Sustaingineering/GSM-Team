@@ -1,20 +1,7 @@
 {
-	"Number": "+16472333143"",
+	"Number": "+16472333143",
 	"Date": "18/10/08",
-	"Time": 14:32:23-28"",
-	"Data":[
-		"Load Voltage": "9",
-		"Load Current": "8",
-		"Power": "7",
-		"Atmospheric Temperature": "6",
-		"Solar Panel Temperature": "5",
-		"Water Breaker Flag": "4",
-	]
-}
-{
-	"Number": "+16472333143"",
-	"Date": "18/10/08",
-	"Time": 14:32:52-28"",
+	"Time": "14:40:25-28",
 	"Data":[
 		"Load Voltage": "8",
 		"Load Current": "7",
@@ -22,5 +9,18 @@
 		"Atmospheric Temperature": "6",
 		"Solar Panel Temperature": "5",
 		"Water Breaker Flag": "8",
+	]
+}
+{
+	"Number": "+16472333143",
+	"Date": "18/10/08",
+	"Time": "14:40:29-28",
+	"Data":[
+		"Load Voltage": "9",
+		"Load Current": "8",
+		"Power": "7",
+		"Atmospheric Temperature": "6",
+		"Solar Panel Temperature": "5",
+		"Water Breaker Flag": "4",
 	]
 }
