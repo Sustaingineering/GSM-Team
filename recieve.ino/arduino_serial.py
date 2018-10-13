@@ -1,23 +1,23 @@
 import serial
-import csv
+# import csv
 import json
 import re
 import matplotlib.pyplot as plt
 import unicodedata
-# import pandas as pd
  
 portPath = "COM1"	   # Must match value shown on Arduino IDE
 baud = 115200					 # Must match Arduino baud rate
 timeout = 999					  # Seconds
-c_filename = "data.csv"
-j_filename = "data.json"
-num_signals = 1
-
-sms=" "
+# c_filename = "data.csv"
+j_filename = "data.json"	# File to output data into
  
+# Updating this list of fields will automatically cause the new field to be handled correctly
+# The field must also be added in the microcontroller code
+
 # Fields = ["Load Voltage: ", "Load Current: ", "Power: ", "Atmospheric Temperature: ", "Solar Panel Temperature: ", "Water Breaker Flag: "]
 Fields = ["Load Voltage", "Load Current", "Power", "Atmospheric Temperature", "Solar Panel Temperature", "Water Breaker Flag"]
  
+# There are three values collected which are not a field: these are sender's number, date, and time
 max_num_readings = len(Fields)+3
 
 def create_serial_obj(portPath, baud_rate, tout):
@@ -28,15 +28,19 @@ def create_serial_obj(portPath, baud_rate, tout):
 	return serial.Serial(portPath, baud_rate, timeout = tout)
 
 def initialization(serial):
+	"""
+	Connecting to microcontroller via serial port
+	"""
 	serial.flushInput()
 	
-	print "Please wait..."
+	print "Please wait..." # Waiting for microcontroller to connect to GSM network
 	
 	serial_line=serial.readline()
 	while serial_line.find("Number of messages:")==-1:
 		print serial_line
 		serial_line=serial.readline()
 		
+	# Serial sometimes gets stuck here. If so, press enter
 	print "Ready to begin"
 	
 def read_serial_data(serial):
@@ -45,40 +49,43 @@ def read_serial_data(serial):
 	from the serial port
 	"""
 	
+	# Request serial input
 	serial.flushInput()
 	
 	serial_data = []
-	readings_left = True
+	# Check if there are more readings. If there are no more readings, exit the loop
+	readings_left = max_num_readings
 	timeout_reached = False
 	read_header=False
+	
+	# Read serial until all values have been found
 	while readings_left and not timeout_reached:
-		serial_line = serial.readline()
-		print(serial_line)
+		# Read serial input
+		serial_line = serial.readline()		
+		print(serial_line) # For debugging
+		
+		# First, read the header values
+		# These values appear twice in microcontroller output. Make sure only to read values once
+		# Parse serial output for header values line (begins with +CMGR: )
 		if(not read_header and serial_line.find("+CMGR: ")==0):
+			# Split header line into values
 			temp_array=serial_line.split(",")
+			# Select the correct values
 			serial_data.append(temp_array[1].replace("\"","")) #Append sender's phone number
+			readings_left-=1
 			serial_data.append(temp_array[3].replace("\"","")) #Append date SMS was recieved
+			readings_left-=1
 			serial_data.append(temp_array[4].replace("\"","")) #Append time SMS was recieved
+			readings_left-=1
 			read_header=True
-		# print serial_line
-		sms=""
+			
+		# Read values of fields
 		for s in Fields:
-			#print "Serial line: "+str(serial_line)
-			#print "Finding: "+str(s+": ")
-			#print "Found="+str(serial_line.find(s+": "))
+			# Parse serial input for field name
 			if serial_line.find(s+": ")==0:
+				# Extract value for field
 				serial_data.append(serial_line.partition(": ")[2])
-				#print "Creating Temp: "
-				temp=""+s+": "+serial_data[-1]
-				#print temp
-				sms=sms+temp+","
-				
-				# serial_data.append(serial_line)
-				#print "Length serial_data: "+str(len(serial_data))
-				print "serial_data: "+str(serial_data) 
-				if len(serial_data) == max_num_readings:
-					readings_left = False
-	#print "SMS: \n"+str(sms)
+				readings_left-=1
 	return serial_data
 	
 	
@@ -113,10 +120,10 @@ def clean_serial_data(data):
 		# line_data = [float(element) for element in line_data if is_number(element)] # Convert strings to float
 		# if len(line_data) >= 2:
 			# clean_data.append(line_data)
-	print "Clean data: "+str(clean_data)
  
 	return clean_data		   
  
+# Not used
 def save_to_csv(data, c_filename):
 	"""
 	Saves a list of lists (data) to filename.csv
@@ -135,10 +142,19 @@ def save_to_json(data, j_filename):
 	"""
 	Saves a list of lists (data) to filename.json
 	"""
+	
+	"""
+	Writing to a file overwrites the data.
+	We must read the current contents of the JSON into memory, and then write it back to the file again.
+	"""
 	fr=open(j_filename,"r")
 	jsoncontent=fr.read()
 	fr.close()
+	
+	# Open file to write
 	fw=open(j_filename, "w")
+	
+	# Format output
 	jsondata="{\n"
 	jsondata+="\t\"Number\": \""
 	jsondata+=str(data[0])
@@ -157,72 +173,30 @@ def save_to_json(data, j_filename):
 		jsondata+=",\n"
 	jsondata+="\t]\n"
 	jsondata+="}\n"
+	
+	# Write output
 	fw.write(jsoncontent+jsondata)
+	
+	#IMPORTANT: File must be closed so that GUI can also read JSON file
 	fw.close()
 	
-def gen_col_list(num_signals):
-	"""
-	Given the number of signals returns
-	a list of columns for the data.
-	E.g. 3 signals returns the list: ['Time','Signal1','Signal2','Signal3']
-	"""
-	col_list = ['Time']
-	for i in range(1,num_signals+1):
-		col = 'Signal'+str(i)
-		col_list.append(col)
-		
-	return col_list
-	
-def map_value(x, in_min, in_max, out_min, out_max):
-	return (((x - in_min) * (out_max - out_min))/(in_max - in_min)) + out_min
- 
-	
-def simple_plot(csv_file, columns, headers):
-	plt.clf()
-	plt.close()
-	plt.plotfile(csv_file, columns, names=headers, newfig=True)
-	plt.show()
- 
-# def plot_csv(csv_file, cols):
-	# # Create Pandas DataFrame from csv data
-	# data_frame = pd.read_csv(csv_file)
-	# # Set the names of the columns
-	# data_frame.columns = cols
-	# # Set the first column (Time) as the index 
-	# data_frame = data_frame.set_index(cols[0])
-	# # Map the voltage values from 0-1023 to 0-5
-	# data_frame = data_frame.apply(lambda x: map_value(x,0.,1023,0,5))
-	# # Bring back the Time column
-	# data_frame = data_frame.reset_index()
-	# plt.clf()
-	# plt.close()
-	# # Plot the data
-	# data_frame.plot(x=cols[0],y=cols[1:])
-	# plt.show()
-	
 
+# Main function
+
+# Initialize serial port
 print "Creating serial object..."
 serial_obj = create_serial_obj(portPath, baud, timeout)
 
 initialization(serial_obj)
 
+# Read SMS
 while 1:
 
-	print "Reading serial data..."
+	# Reading serial data...
 	serial_data=read_serial_data(serial_obj)
-	print "Length: "+str(len(serial_data))
 
-	print "Cleaning data..."
+	# Cleaning data
 	clean_data =  clean_serial_data(serial_data)
 
-	# clean_data=[1,2,3,4,5,6]
-	# print "Saving to csv..."
-	# save_to_csv(clean_data, c_filename)
-
-	print "Saving to json..."
+	# Saving to json
 	save_to_json(clean_data, j_filename)
- 
-# print "Plotting data..."
-# #simple_plot(filename, (0,1,2), ['time (s)', 'voltage1', 'voltage2'])
-# #simple_plot(filename, (0,1), ['time (s)', 'voltage1'])
-# plot_csv(filename, gen_col_list(num_signals))

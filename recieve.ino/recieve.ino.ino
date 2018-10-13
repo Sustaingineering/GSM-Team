@@ -1,4 +1,4 @@
-//By Rico Jia, May 16, 2018
+  //By Rico Jia, May 16, 2018
 
 //SG_FONA folder must be included in \Documents\Arduino\libraries
 //Arduino must be set to port 1. Go to device manager -> Ports(COM & LPT) -> Arduino Uno -> Properties -> Port Settings -> Advanced -> COM Port Number. Then re-plug the USB.
