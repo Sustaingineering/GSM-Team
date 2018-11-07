@@ -25,3 +25,55 @@
 		"Water Breaker Flag": "4",
 	]
 }
+{
+	"Number": "+16472333143",
+	"Date": "18/10/13",
+	"Time": "11:18:05-28",
+	"Data":[
+		"Load Voltage": "1",
+		"Load Current": "2",
+		"Power": "3",
+		"Atmospheric Temperature": "4",
+		"Solar Panel Temperature": "5",
+		"Water Breaker Flag": "6",
+	]
+}
+{
+	"Number": "+16472333143",
+	"Date": "18/10/13",
+	"Time": "11:18:55-28",
+	"Data":[
+		"Load Voltage": "6",
+		"Load Current": "5",
+		"Power": "4",
+		"Atmospheric Temperature": "3",
+		"Solar Panel Temperature": "2",
+		"Water Breaker Flag": "1",
+	]
+}
+{
+	"Number": "+16472333143",
+	"Date": "18/10/13",
+	"Time": "11:19:45-28",
+	"Data":[
+		"Load Voltage": "1",
+		"Load Current": "1",
+		"Power": "1",
+		"Atmospheric Temperature": "1",
+		"Solar Panel Temperature": "1",
+		"Water Breaker Flag": "1",
+	]
+}
+{
+	"Number": "+16472333143",
+	"Date": "18/11/03",
+	"Time": "11:45:24-28",
+	"Data":[
+		"Load Voltage": "Test",
+		"Load Current": "",
+		"Power": "",
+		"Atmospheric Temperature": "",
+		"Solar Panel Temperature": "",
+		"Water Breaker Flag": "",
+	]
+}

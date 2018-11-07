@@ -5,6 +5,7 @@
 //Serial may need to be set to 4800bps manually first. On my device, this was the default.
 //Serial Monitor must be set to Both NL & CR, as well as 2400 Baud
 //Many cell carriers do not support GSM. Only supported network may be Rogers (this will be shutting down soon)
+//Ensure that in the IDE, under Tools -> Board, the value is set to Arduino/Genuino Uno.
 
 #define FONA_TX 4 //Soft serial port
 #define FONA_RX 5 //Soft serial port
@@ -50,7 +51,7 @@ void setup() {
 
   while (!Serial);    // wait till serial gets initialized
 
-  Serial.begin(2400); //Baud rate
+  Serial.begin(9600); //Baud rate
   Serial.println(F("Sustaingineering 3G TxRx!!"));
   Serial.println(F("Initializing....(May take 3 seconds)"));
 
@@ -85,22 +86,62 @@ void setup() {
 }
 void loop()
 {
-//  float sensorValue = analogRead(A2) ;
-//  // Convert the analog reading ( which goes from 0 - 1023) to a voltage (0 - 5V):
-//  float voltage = voltage /1023;
-//        voltage = sensorValue *5000;//(in mv)
-//        
-//  float volt = voltage-1670;//(while cold conjuction is 22 degree 
-//                             //   the voltage cross thermalcouple is 1.67v)
-//        volt=  volt / 150; //(opamp apmplified 150 times)
-//  float temp = (volt)/0.041 +22  ;//( 1 degree = 0.0404 mv in K type )
+ 
+  /*float sensorValue = analogRead(A2) ;
+  float volt;
+  float temp;
+  // Convert the analog reading ( which goes from 0 - 1023) to a voltage (0 - 5V):
+  float voltage = sensorValue *5000/1023+25;
+
+        if(voltage > 2500)
+        {
+          volt = voltage-2500;//(while cold conjuction is 22 degree 
+          volt=  volt / 123; //(opamp apmplified 150 times)
+          temp = (volt)/0.041 +25  ;//( 1 degree = 0.0404 mv in K type )
+        }
+       
+        else{
+          volt = 2500-voltage;//(while cold conjuction is 22 degree 
+                             //   the voltage cross thermalcouple is 1.67v) 
+                volt=  volt / 123; //(opamp apmplified 150 times)
+        
+          temp = 25-(volt)/0.0404  ;//( 1 degree = 0.0404 mv in K type )
+  
+        }
+                      
+       
+  Serial.println(temp);
+  delay(1000);*/
 
   
   double temp=random(0,400)/100.+23.;
+
+  /*uint8_t year=0;
+  uint8_t month=0;
+  uint8_t date=0;
+  uint8_t hr=0;
+  uint8_t min=0;
+  uint8_t sec=0;
+  
+  fona.readRTC(&year,&month,&date,&hr,&min,&sec);
+
+  Serial.print(F("Year: "));
+  Serial.println(year);
+  Serial.print(F("month: "));
+  Serial.println(month);
+  Serial.print(F("date: "));
+  Serial.println(date);
+  Serial.print(F("hr: "));
+  Serial.println(hr);
+  Serial.print(F("min: "));
+  Serial.println(min);
+  Serial.print(F("sec: "));
+  Serial.println(sec);*/
+  
   
   send_sms(temp);
 
-  delay(2500); //Wait 2.5 seconds before repeating
+  //delay(10000); //Wait 10 seconds before repeating
 } 
 
 void send_sms(float value)

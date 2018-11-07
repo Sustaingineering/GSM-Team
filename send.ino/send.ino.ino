@@ -10,6 +10,8 @@
 #include "SG_FONA.h"
 volatile char ISR_Count=0;
 
+bool Stop=false;
+
 //Optional header file to enable I/O to the EEPROM memory
 /*#include <EEPROM_R_W.h>
 
@@ -92,7 +94,19 @@ void setup() {
 }
 void loop()
 {
-  float sensorValue = analogRead(A2) ;
+  check_get_sms();
+  if(Stop)
+  {
+    return;
+  }
+  Serial.println("Do something");
+  int timer=millis();
+  int currentTime=timer;
+  while(timer<=currentTime+1000)
+  {
+    currentTime=millis();
+  }
+  /*float sensorValue = analogRead(A2) ;
   // Convert the analog reading ( which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = voltage /1023;
         voltage = sensorValue *5000;//(in mv)
@@ -102,20 +116,16 @@ void loop()
         volt=  volt / 150; //(opamp apmplified 150 times)
   float temp = (volt)/0.041 +22  ;//( 1 degree = 0.0404 mv in K type )
   
-  Serial.println(temp);
-
+  //Serial.println(temp);
   float LoadVoltage=-1;
   float LoadCurrent=-1;
   float Power=-1;
   float AtmTemp=-1;
-  float SolTemp=temp;
+  float SolTemp=-1;
   bool WaterBreakerFlag=false;
   
   send_sms(LoadVoltage, LoadCurrent,Power,AtmTemp,SolTemp,WaterBreakerFlag);
-
-  while(1)
-  {
-  }
+  */
 } 
 
 void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag)
@@ -188,3 +198,101 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) {
   buff[buffidx] = 0;  // null term
 return buffidx;
 }
+
+void check_get_sms()
+{
+    Serial.println("Checking SMS");
+    char replybuffer[141];
+    //Check for new message
+    if(numsms != fona.getNumSMS())
+    {
+      flushSerial();
+      numsms = fona.getNumSMS();
+      uint8_t smsn = numsms - 1;  // the sms# starts from 0
+      //Print sender info
+      if (! fona.getSMSSender(smsn, replybuffer, 250)) {
+          Serial.println("Failed!");
+          return;
+      }
+        Serial.print(F("FROM: ")); 
+        Serial.println(replybuffer);
+
+        // Retrieve SMS value.
+        uint16_t smslen;
+        if (! fona.readSMS(smsn, replybuffer, 250, &smslen)) { // pass in buffer and max len!
+          Serial.println("Failed!");
+          return;
+        }
+
+        //Convert to string to use functions
+        String CheckControlSMS=replybuffer;
+        Serial.println("CheckControlSMS is: "+CheckControlSMS);
+        //Read only the first word before the space
+        CheckControlSMS=CheckControlSMS.substring(0,CheckControlSMS.indexOf(" "));
+        //Allow for any capitalization
+        CheckControlSMS.toLowerCase();
+        Serial.println("Command is: "+CheckControlSMS);
+        //Check for stop command
+        if(CheckControlSMS.equals("stop"))
+        {
+          Serial.println("Found Stop");
+          //Set global stop variable (only check_get_sms() will be run)
+          Stop=true;
+          //Turn off all pins
+          turn_off_pins();
+          return;
+        }
+        //Check for start command
+        else if(CheckControlSMS.equals("start"))
+        {
+          Serial.println("Found Start");
+          //Allows for normal operation to resume
+          Stop=false;
+          //Turn on all pins
+          turn_on_pins();
+          return;
+        }
+        //Allows users to stop for a predefined amount of time
+        else if(CheckControlSMS.equals("pause"))
+        {
+          Serial.println("Found Pause");
+          int PauseDuration=0, PauseStartTime=0;
+          //Number of seconds to pause for is to be specified as integer
+          //Format should be "Pause <seconds>", where <seconds> is an integer
+          //If the operations fails, 0 is returned
+          PauseDuration=(CheckControlSMS.substring(CheckControlSMS.indexOf(" ",CheckControlSMS.length()))).toInt();
+          //Disable pins
+          turn_off_pins();
+          PauseStartTime=millis();
+          Serial.println("Pause Start Time: "+PauseStartTime);
+          //Wait specified number of seconds
+          while(PauseStartTime>=millis()-PauseDuration*1000)
+          {
+            if(millis()%1000<100)
+            {
+              int CurrentTime=millis();
+              Serial.println("Current Time: "+CurrentTime);              
+            }
+          }
+          //Restore pins
+          turn_on_pins();
+          return;
+        }
+        return;
+      }
+} 
+
+//To be implemented
+void turn_off_pins()
+{
+  Serial.println(F("Pins off"));
+  return;
+}
+
+//To be implemented
+void turn_on_pins()
+{
+  Serial.println(F("Pins on"));
+  return;
+}
+

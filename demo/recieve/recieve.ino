@@ -96,6 +96,8 @@ void setup() {
     while (1);
   }
   Serial.println("initialization done.");*/
+
+  fona.enableRTC(1);
 }
 
 void loop()
@@ -105,6 +107,31 @@ void loop()
     if(time_sms())
     {
       check_get_sms();
+
+    Serial.print(F("AT+CLTS: "));
+    Serial.println(fona.enableRTC(1));
+      
+  uint8_t year=0;
+  uint8_t month=0;
+  uint8_t date=0;
+  uint8_t hr=0;
+  uint8_t min=0;
+  uint8_t sec=0;
+  
+  fona.readRTC(&year,&month,&date,&hr,&min,&sec);
+
+  Serial.print(F("Year: "));
+  Serial.println(year);
+  Serial.print(F("month: "));
+  Serial.println(month);
+  Serial.print(F("date: "));
+  Serial.println(date);
+  Serial.print(F("hr: "));
+  Serial.println(hr);
+  Serial.print(F("min: "));
+  Serial.println(min);
+  Serial.print(F("sec: "));
+  Serial.println(sec);
     }
    }  
    //Do other stuff
