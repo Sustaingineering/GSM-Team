@@ -5,7 +5,7 @@ import re
 import matplotlib.pyplot as plt
 import unicodedata
  
-portPath = "COM1"	   # Must match value shown on Arduino IDE
+portPath = "COM3"	   # Must match value shown on Arduino IDE
 baud = 115200					 # Must match Arduino baud rate
 timeout = 999					  # Seconds
 # c_filename = "data.csv"
@@ -15,10 +15,10 @@ j_filename = "data.json"	# File to output data into
 # The field must also be added in the microcontroller code
 
 # Fields = ["Load Voltage: ", "Load Current: ", "Power: ", "Atmospheric Temperature: ", "Solar Panel Temperature: ", "Water Breaker Flag: "]
-Fields = ["Load Voltage", "Load Current", "Power", "Atmospheric Temperature", "Solar Panel Temperature", "Water Breaker Flag"]
+Fields = ["Number", "Date", "Time", "ID", "Load Voltage", "Load Current", "Power", "Atmospheric Temperature", "Solar Panel Temperature", "Water Breaker Flag"]
  
 # There are three values collected which are not a field: these are sender's number, date, and time
-max_num_readings = len(Fields)+3
+max_num_readings = len(Fields)
 
 def create_serial_obj(portPath, baud_rate, tout):
 	"""
@@ -48,6 +48,10 @@ def read_serial_data(serial):
 	Given a pyserial object (serial). Outputs a list of lines read in
 	from the serial port
 	"""
+	
+	# Failsafe
+	for i in Fields:
+		i="Error"
 	
 	# Request serial input
 	serial.flushInput()
@@ -156,15 +160,19 @@ def save_to_json(data, j_filename):
 	
 	# Format output
 	jsondata="{\n"
-	jsondata+="\t\"Number\": \""
-	jsondata+=str(data[0])
-	jsondata+="\",\n"
-	jsondata+="\t\"Date\": \""
-	jsondata+=str(data[1])
-	jsondata+="\",\n"
-	jsondata+="\t\"Time\": \""
-	jsondata+=str(data[2])
-	jsondata+="\",\n"
+	# jsondata+="\t\"Number\": \""
+	# jsondata+=str(data[0])
+	# jsondata+="\",\n"
+	# jsondata+="\t\"Date\": \""
+	# jsondata+=str(data[1])
+	# jsondata+="\",\n"
+	# jsondata+="\t\"Time\": \""
+	# jsondata+=str(data[2])
+	# jsondata+="\",\n"
+	for i in range (0,3):
+		jsondata+="\""+Fields[i]+"\": "
+		jsondata+="\""+str(data[i+3])+"\""
+		jsondata+=",\n"
 	jsondata+="\t\"Data\":[\n"
 	for i in range(len(Fields)):
 		jsondata+="\t\t"
