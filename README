@@ -1,11 +1,11 @@
-# Data transfer from the water pump stations to the internet
-
-## Overview
-
-
 GSM Module A does NOT work
 GSM Module B DOES work
 SIM Card 8381 does NOT work
 SIM Card 9078 DOES work
 Both Arduinos work
 SIM Card 4089 DOES work
+
+
+Power usage:
+  Idle voltage: 4.6V
+  Active voltage: 4.6V
