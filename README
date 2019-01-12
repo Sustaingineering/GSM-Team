@@ -1,10 +1,12 @@
-GSM Module A does NOT work
-GSM Module B DOES work
-SIM Card 8381 does NOT work
-SIM Card 9078 DOES work
-Both Arduinos work
-SIM Card 4089 DOES work
+Working:
+GSM Module B
+SIM Card 9078
+SIM Card 4089
+All Arduinos
 
+Not working:
+GSM Module A
+SIM Card 8381
 
 Power usage:
   Idle voltage: 4.6V
