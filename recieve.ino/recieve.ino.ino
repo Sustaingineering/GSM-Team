@@ -1,4 +1,4 @@
-  //By Rico Jia, May 16, 2018
+//By Rico Jia, May 16, 2018
 
 //SG_FONA folder must be included in \Documents\Arduino\libraries
 //Arduino must be set to port 1. Go to device manager -> Ports(COM & LPT) -> Arduino Uno -> Properties -> Port Settings -> Advanced -> COM Port Number. Then re-plug the USB.
@@ -16,12 +16,12 @@
 File data;
 
 //Optional header file to enable I/O to the EEPROM memory
-/*#include <EEPROM_R_W.h>
+//#include <EEPROM_R_W.h>
 
-EEPROM_R_W eeprom = EEPROM_R_W();*/
+//EEPROM_R_W eeprom = EEPROM_R_W();
 
-#define FONA_TX 4 //Soft serial port
-#define FONA_RX 5 //Soft serial port
+#define FONA_TX 4    //Soft serial port
+#define FONA_RX 5    //Soft serial port
 #define FONA_RI 3    //let's test it!
 #define FONA_RST 9
 
@@ -30,22 +30,23 @@ EEPROM_R_W eeprom = EEPROM_R_W();*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 
 char sendto[21] = "6472333143";   // IMPORTANT: Enter destination number here
-char replybuffer[255];   // this is a large buffer for replies
+char replybuffer[255];            // this is a large buffer for replies
 int timecounts = 0;
 int last_timecounts = 0;
 
-// We default to using software serial. If you want to use hardware serial
-// (because softserial isnt supported) comment out the following three lines 
-// and uncomment the HardwareSerial line
+/* We default to using software serial. If you want to use hardware serial
+(because softserial isnt supported) comment out the following three lines 
+and uncomment the HardwareSerial line */
+
 #include <SoftwareSerial.h>
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX,FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
 
 // Hardware serial is also possible!
-//  HardwareSerial *fonaSerial = &Serial1;
+// HardwareSerial *fonaSerial = &Serial1;
 
 // Use this for FONA 800 and 808s
-//Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+// Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 // Use this one for FONA 3G
 Adafruit_FONA_3G fona = Adafruit_FONA_3G(FONA_RST);
 
@@ -64,15 +65,15 @@ void setup() {
   digitalWrite(FONA_POWER, LOW);
   delay(3000);      
 
-  while (!Serial);    // wait till serial gets initialized
+  while (!Serial);                                            // wait till serial gets initialized
 
-  Serial.begin(115200); //Baud rate
+  Serial.begin(115200);                                       // baud rate
   Serial.println(F("Sustaingineering 3G TxRx!!"));
   Serial.println(F("Initializing....(May take 3 seconds)"));
 
   fonaSerial->begin(4800);
-  while (! fona.begin(*fonaSerial)) {
-    Serial.println(F("Couldn't find FONA"));     //reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
+  while (!fona.begin(*fonaSerial)) {
+    Serial.println(F("Couldn't find FONA"));     // reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
     delay(1000);
   }
   type = fona.type();
@@ -158,10 +159,10 @@ void check_get_sms()
 
         /*
          * Data is sent in csv format. The data will appear as follows:
-         *    float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag
+         * float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag
          */
         
-        //Retrieve delimited values for use
+        // Retrieve delimited values for use
         char* vars[6];
         vars[0]=strtok(replybuffer,",");
         for(int i=1;i<6;i++)
@@ -181,8 +182,8 @@ void check_get_sms()
         Serial.print(F("Water Breaker Flag: "));
         Serial.println(vars[5]);
 /*
-        //Read file from memory
-        //File is overwritten when writing to SD, so we must first retrieve the current contents of the file
+        // Read file from memory
+        // File is overwritten when writing to SD, so we must first retrieve the current contents of the file
         char* data_inmem="";
         data=SD.open("data.txt");
         if(data)
@@ -199,11 +200,11 @@ void check_get_sms()
         }
 
 
-        //Append the new values to the old values, terminated with a new line
+        // Append the new values to the old values, terminated with a new line
         strcat(data_inmem,replybuffer);
         strcat(data_inmem,"\n");
 
-        //Write the full data back to the SD card
+        // Write the full data back to the SD card
         data = SD.open("data.txt", FILE_WRITE);
 
         // if the file opened okay, write to it:
