@@ -1,18 +1,20 @@
 import serial
-# import csv
 import json
 import re
 import matplotlib.pyplot as plt
 import unicodedata
+# import csv
  
-portPath = "COM1"	   # Must match value shown on Arduino IDE
-baud = 115200					 # Must match Arduino baud rate
-timeout = 999					  # Seconds
-# c_filename = "data.csv"
+portPath = "COM1"	   		# Must match value shown on Arduino IDE
+baud = 115200				# Must match Arduino baud rate
+timeout = 999				# Seconds
 j_filename = "data.json"	# File to output data into
+# c_filename = "data.csv"
  
-# Updating this list of fields will automatically cause the new field to be handled correctly
-# The field must also be added in the microcontroller code
+'''
+Updating this list of fields will automatically cause the new field to be handled correctly
+The field must also be added in the microcontroller code
+'''
 
 # Fields = ["Load Voltage: ", "Load Current: ", "Power: ", "Atmospheric Temperature: ", "Solar Panel Temperature: ", "Water Breaker Flag: "]
 Fields = ["Load Voltage", "Load Current", "Power", "Atmospheric Temperature", "Solar Panel Temperature", "Water Breaker Flag"]
@@ -21,16 +23,18 @@ Fields = ["Load Voltage", "Load Current", "Power", "Atmospheric Temperature", "S
 max_num_readings = len(Fields)+3
 
 def create_serial_obj(portPath, baud_rate, tout):
-	"""
+	'''
 	Given the port path, baud rate, and timeout value, creates
 	and returns a pyserial object.
-	"""
+	'''
+	
 	return serial.Serial(portPath, baud_rate, timeout = tout)
 
 def initialization(serial):
-	"""
+	'''
 	Connecting to microcontroller via serial port
-	"""
+	'''
+	
 	serial.flushInput()
 	
 	print "Please wait..." # Waiting for microcontroller to connect to GSM network
@@ -44,10 +48,10 @@ def initialization(serial):
 	print "Ready to begin"
 	
 def read_serial_data(serial):
-	"""
+	'''
 	Given a pyserial object (serial). Outputs a list of lines read in
 	from the serial port
-	"""
+	'''
 	
 	# Request serial input
 	serial.flushInput()
@@ -91,10 +95,10 @@ def read_serial_data(serial):
 	
  
 def is_number(string):
-	"""
-	Given a string returns True if the string represents a number.
+	'''
+	Given a string, function returns True if the string represents a number.
 	Returns False otherwise.
-	"""
+	'''
 	try:
 		float(string)
 		return True
@@ -102,15 +106,16 @@ def is_number(string):
 		return False
 		
 def clean_serial_data(data):
-	"""
+	'''
 	Given a list of serial lines (data). Removes all characters.
 	Returns the cleaned list of lists of digits.
 	Given something like: ['0.5000,33\r\n', '1.0000,283\r\n']
 	Returns: [[0.5,33.0], [1.0,283.0]]
-	"""
+	'''
+	
 	clean_data=[]
 	for ascii in data:
-		s=unicode(ascii, "utf-8")
+		s = unicode(ascii, "utf-8")
 		clean_data.append(("".join(ch for ch in s if unicodedata.category(ch)[0]!="C")).encode("utf-8"))
 	
 	# clean_data = []
@@ -123,12 +128,12 @@ def clean_serial_data(data):
  
 	return clean_data		   
  
-# Not used
+# Not used; broken
 def save_to_csv(data, c_filename):
-	"""
+	'''
 	Saves a list of lists (data) to filename.csv
-	"""
-	# Broken
+	'''
+	
 	with open(c_filename, 'wb') as csvfile:
 		csvread = csv.reader(csvfile)
 		for row in csvread:
@@ -139,20 +144,19 @@ def save_to_csv(data, c_filename):
 		csvwrite.writerow(data)
  
 def save_to_json(data, j_filename):
-	"""
+	'''
 	Saves a list of lists (data) to filename.json
-	"""
-	
-	"""
+
 	Writing to a file overwrites the data.
 	We must read the current contents of the JSON into memory, and then write it back to the file again.
-	"""
-	fr=open(j_filename,"r")
-	jsoncontent=fr.read()
+	'''
+	
+	fr = open(j_filename,"r")
+	jsoncontent = fr.read()
 	fr.close()
 	
 	# Open file to write
-	fw=open(j_filename, "w")
+	fw = open(j_filename, "w")
 	
 	# Format output
 	jsondata="{\n"
@@ -166,6 +170,7 @@ def save_to_json(data, j_filename):
 	jsondata+=str(data[2])
 	jsondata+="\",\n"
 	jsondata+="\t\"Data\":[\n"
+	
 	for i in range(len(Fields)):
 		jsondata+="\t\t"
 		jsondata+="\""+Fields[i]+"\": "
@@ -177,7 +182,7 @@ def save_to_json(data, j_filename):
 	# Write output
 	fw.write(jsoncontent+jsondata)
 	
-	#IMPORTANT: File must be closed so that GUI can also read JSON file
+	#IMPORTANT: File must be closed so that GUI can read JSON file
 	fw.close()
 	
 
