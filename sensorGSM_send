@@ -1,0 +1,420 @@
+/* Defining PIN assignment
+  // Voltage Sensor circuit
+      A1 - Voltage Divider
+  // Current Sensor circuit
+      A0 - Hall Effect sensor
+  // Temperature Sensor circuit
+      A2 - Temperature sensor
+  // SD Card Module SPI bus circuit
+      pin 11 - MOSI
+      pin 12 - MISO
+      pin 13 - CLK
+      pin 4 - CS (depends on your SD card shield or module, 4 used here)
+  // Relay circuit
+      pin 6 - Relay PWM pin
+  // Timer pins
+      A4 - SDA
+      A5 - SCL
+  // LED Test Interface
+      pin 2 - Arduino ON/OFF
+      pin 3 - Voltage reading
+      pin 5 - Current reading
+      pin 7 - Relay Open/Close
+*/
+
+#include "SG_FONA.h"
+volatile char ISR_Count = 0;
+
+#define FONA_TX 4    //Soft serial port
+#define FONA_RX 5    //Soft serial port
+#define FONA_RI 1    // TESTING WITH PIN 1 TO NOT OVERLAP
+#define FONA_RST 9
+
+#define FONA_POWER 8
+#define FONA_POWER_ON_TIME  180  /* 180ms*/
+#define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
+
+char sendto[21] = "7783173724";   // IMPORTANT: Enter destination number here
+
+// Header files
+#include <SPI.h>
+#include "SdFat.h"
+#include <Wire.h>
+#include "DS3231.h"
+
+RTClib RTC;
+SdFat SD;
+
+#include <SoftwareSerial.h>
+SoftwareSerial fonaSS = SoftwareSerial(FONA_TX,FONA_RX);
+SoftwareSerial *fonaSerial = &fonaSS;
+// Hardware serial is also possible!
+// HardwareSerial *fonaSerial = &Serial1;
+
+Adafruit_FONA_3G fona = Adafruit_FONA_3G(FONA_RST);
+
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);    // Is it for reading from serial port?
+
+uint8_t type;
+
+volatile int8_t numsms;
+
+// Declare all global variables
+  // Volatge Sensor
+    double DivVoltage = 0;       // Voltage divider reading
+    double SourceVoltage = 0;        // Final voltage reading result
+
+  // Current Sensor
+    double HallVoltage = 0;   // Voltage reading of Hall Effect
+    double HallValue1 = 0;       // Variables for current running average
+    double HallValue2 = 0;
+    double HallValue3 = 0;  
+    double HallAmps = 0;      // Current result from Hall Effect Sensor
+
+  // System Power
+    double Power = 0;
+
+  // Temperature Sensor
+    double TempVolt = 0; //previously volt
+    double Temp = 0;      // previously temp
+
+  // Data Logging
+    File myFile;
+    unsigned long Time;
+
+  // Relay Circuit
+    int RelayTest;
+
+// Declare any global constants
+double RH = 981300;   // Voltage Divider High Resistance
+double RL = 24743;    // Voltage Divider Low Resistance
+
+// Function prototype
+void send_sms(double SourceVoltage, double HallAmps, double Power, double Temp);
+
+// Setup Function
+void setup() {
+  Serial.begin(4800);             // Setup Baud rate
+ /* Wire.begin();
+
+  // Data Logging setup
+  while (!Serial) {
+     // wait for serial port to connect. Needed for native USB port only
+  }
+  Serial.print("Serial works");
+  Serial.print("Initializing SD card...");
+
+  if (!SD.begin(10)) {
+    Serial.println("initialization failed!");
+    while (1);
+  }
+
+  Serial.println("initialization done.");
+
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+*/
+
+  while (!Serial) {
+     // wait for serial port to connect. Needed for native USB port only
+  }
+  Serial.println(F("Sustaingineering 3G TxRx!"));
+  Serial.println(F("Initializing..."));
+
+  fonaSerial->begin(4800);
+  while (!fona.begin(*fonaSerial)) {
+    Serial.println(F("Cannot connect to FONA"));     //reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
+    delay(1000);
+  }
+  type = fona.type();
+  Serial.println(F("FONA is OK"));
+
+  Serial.println(F("Searching for network\n"));
+  bool SIMFound = false;
+  for (int countdown=600; countdown>=0 && SIMFound==false; countdown--) {
+    //Serial.print(F("Countdown: "));
+    //Serial.println(countdown);
+    uint8_t n = fona.getNetworkStatus();      // constantly check until network is connected to home    sendCheckReply(F("AT+CLVL="), i, ok_reply);
+    
+    if (n == 1) {
+      SIMFound=true;
+      Serial.print(F("Found ")); //If program hangs here, SIM card cannot be read/connect to network
+      Serial.println(F("Network Connected")); 
+    }
+  // uint8_t m = fona.setSMSInterrupt(1);    // this is for setting up the Ring Indicator Pin
+  }
+  if(!SIMFound) {
+    Serial.println(F("SIM card could not be found. Please ensure that your SIM card is compatible with dual-band UMTS/HSDPA850/1900MHz WCDMA + HSDPA."));
+    while(1){}
+  }
+
+  pinMode(FONA_POWER, OUTPUT);
+  pinMode(FONA_RI, INPUT);
+  digitalWrite(FONA_POWER, HIGH);
+  delay(FONA_POWER_ON_TIME);
+  digitalWrite(FONA_POWER, LOW);
+  delay(3000);    
+
+  // Defining LED Interface pins
+  pinMode(2,OUTPUT);    // Arduino On LED
+  pinMode(3,OUTPUT);    // Voltage LED
+ // pinMode(5,OUTPUT);    // Current LED
+  pinMode(7,OUTPUT);    // Relay Open/Close
+  pinMode(6,INPUT);
+}
+
+void loop() {
+
+  /* Current Sensor */
+  HallEffect();
+
+  /* Voltage Divider */
+  VoltageDivider();
+
+  /* Calculate power */
+  Power = SourceVoltage * HallAmps;
+  
+  /* Temperature Sensor */
+  Thermolcouple();
+
+  /* LED Interface Control Testing */
+  LEDInterface();
+
+  /* Displaying Sensor Results */
+  DisplayResults();
+
+  /* Data Logging */
+  SDLog();
+
+  // 1 second delay?? - make saving to SD avg every 10s - + threshhold count
+  delay(1000);
+
+  send_sms(SourceVoltage, HallAmps, Power, Temp);
+
+  while (1) {
+    }
+}
+
+void send_sms(double SourceVoltage, double HallAmps, double Power, double Temp) {
+    char message[141];
+    bool loop = true;
+    while(loop)
+        {
+          flushSerial();    // THIS IS IMPORTANT! OTHERWISE what you typed in might be missing in what you send
+          loop = false;
+          String str;
+          str = (String)(SourceVoltage)+","+(String)(HallAmps)+","+(String)(Power)+","+(String)(Temp);
+          str.toCharArray(message, 141);
+        }
+        
+        Serial.print(F("Your message is: "));
+        Serial.println(message);
+        
+        Serial.print(F("Value of message sent status: "));
+        if(fona.sendSMS(sendto, message)==0) {
+          Serial.println(F("SMS sending failed."));
+        }
+        else {
+          Serial.println(F("SMS sending succeeded!"));
+        }
+   }
+
+void flushSerial() {
+  while (Serial.available())
+    Serial.read();
+}
+
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) {
+  uint16_t buffidx = 0;
+  boolean timeoutvalid = true;
+  if (timeout == 0) timeoutvalid = false;
+
+  while (true) {
+    if (buffidx > maxbuff) {
+      //Serial.println(F("SPACE"));
+      break;
+    }
+
+    while (Serial.available()) {
+      char c =  Serial.read();
+
+      //Serial.print(c, HEX); Serial.print("#"); Serial.println(c);
+
+      if (c == '\r') continue;
+      if (c == 0xA) {
+        if (buffidx == 0)   // the first 0x0A is ignored. 
+          continue;
+
+        timeout = 0;         // the second 0x0A is the end of the line
+        timeoutvalid = true;
+        break;
+      }
+      buff[buffidx] = c;
+      buffidx++;
+    }
+
+    if (timeoutvalid && timeout == 0) {
+      //Serial.println(F("TIMEOUT"));
+      break;
+    }
+    delay(1);
+  }
+  buff[buffidx] = 0;  // null term
+return buffidx;
+}
+
+// Voltage Divider Sensor
+void VoltageDivider() {
+  // Read Voltage at divider and convert to decimal
+  int x = analogRead(A1);
+  DivVoltage = x * (5.0/1023.0);
+
+  // Final Source Voltage reading
+  SourceVoltage = (DivVoltage * (RH + RL)) / RL;
+}
+
+// Hall Effect sensor
+void HallEffect() {
+  HallValue1 = analogRead(A0);     // Multiple readings to calculate average
+  HallValue2 = analogRead(A0);
+  HallValue3 = analogRead(A0);
+
+  HallVoltage = (HallValue1 + HallValue2 + HallValue3) / 3;
+
+  // Convert to decimal
+  HallVoltage = HallVoltage * (5.0/1023.0);
+
+  // Compute the current from the voltage reading
+  // Equation: ...
+  HallAmps = (HallVoltage * 22.0)/3.0 - (55.0 / 3.0);
+}
+
+// Thermolcouple sensor
+void Thermolcouple() {
+  // Read sensor value and convert to mV
+  int x = analogRead(A2);
+  TempVolt = x * (5000.0/1023.0) + 25;
+
+  // Check if upper voltage bound
+  if(TempVolt > 2500) {
+    double volt = TempVolt - 2500;    // Assuming cold junction at 22 degree
+    volt = volt / 123;                // OpAmp amplified 150 times
+    Temp = (volt / 0.041) + 25;       // 0.0404 mv/degree in K type
+  }
+
+  // Else if lower bound
+  else {
+    double volt = 2500 - TempVolt;    // Assuming cold junction at 22 degree
+                                      // The voltage cross thermolcouple is 1.67v)
+    volt = volt / 123;                // OpAmp apmplified 150 times
+    Temp = 25 - (volt / 0.0404);      // 0.0404 mv/degree in K type
+  }
+}
+
+// Display Results
+void DisplayResults() {
+  // Voltage divider voltage
+  Serial.print("Divider Voltage = ");
+  Serial.print(DivVoltage,3);
+
+  // Panel voltage Result
+  Serial.print("\t Panel Voltage = ");
+  Serial.print(SourceVoltage,3);
+
+  // Hall Effect voltage reading
+  Serial.print("\t Hall Voltage = ");
+  Serial.print(HallVoltage,3);
+
+  // Current reading
+  Serial.print("\t Panel Current = ");
+  Serial.print(HallAmps,3);
+
+  // Panel temperature
+  Serial.print("\t Panel Temperature = ");
+  Serial.println(Temp);
+}
+
+// LED Interface
+void LEDInterface() {
+  RelayTest = digitalRead(6); // Checks if relay is closed
+  digitalWrite(2,HIGH);       // Arduino on light
+  digitalWrite(3,LOW);        // Voltage light
+  digitalWrite(5,LOW);        // Current light
+  digitalWrite(7,LOW);        // Relay light
+
+  if(SourceVoltage > 1)
+    digitalWrite(3,HIGH);
+
+  if(HallAmps > 0.5)
+    digitalWrite(5, HIGH);
+
+  if(RelayTest == 1)
+    digitalWrite(7,HIGH);
+}
+
+// Log Results on SD
+void SDLog() {
+  // Open test file
+  // The file name testNUM is the text file we write to
+  myFile = SD.open("timertestreal8.txt", FILE_WRITE);
+
+  // if the file opened okay, write to it
+  if (myFile) {
+    // Record time
+     DateTime now = RTC.now();
+    myFile.print("Time (s) = ");
+    myFile.print(now.year(), DEC);
+    myFile.print('/');
+    myFile.print(now.month(), DEC);
+    myFile.print('/');
+    myFile.print(now.day(), DEC);
+    myFile.print(' ');
+    myFile.print(now.hour(), DEC);
+    myFile.print(':');
+    myFile.print(now.minute(), DEC);
+    myFile.print(':');
+    myFile.print(now.second(), DEC);
+
+    // Record divider voltage
+    myFile.print("\t Divider Voltage = ");
+    myFile.print(DivVoltage);
+
+    // Record panel voltage
+    myFile.print("\t Panels Voltage = ");
+    myFile.print(SourceVoltage);
+
+    // Record hall effect voltage signal
+    myFile.print("\t Hall Voltage = ");
+    myFile.print(HallVoltage);
+
+    // Record panel current
+    myFile.print("\t Panel Current = ");
+    myFile.print(HallAmps);
+
+    // Record temperature (may add another)
+    myFile.print("\t Panel Temperature = ");
+    myFile.println(Temp);
+
+    // close the file:
+    myFile.close();
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening timertest8.txt");
+  }
+
+  /* \\ this code will read the data just stored on the SD Card, ensure file names match
+  myFile = SD.open("test151.txt");
+  if (myFile) {
+    Serial.println("test151.txt:");
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    // close the file:
+    myFile.close();
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
+  }
+  */
+}
