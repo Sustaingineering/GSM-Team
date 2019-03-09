@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import unicodedata
 import csv
  
-portPath = "/dev/tty.usbmodem141101"	   		# Must match value shown on Arduino IDE
-baud = 115200				# Must match Arduino baud rate
-timeout = 999				# Seconds
+portPath = "COM1"	  			# Must match value shown on Arduino IDE
+baud = 115200							# Must match Arduino baud rate
+timeout = 999							# Seconds
 j_filename = "data.json"	# File to output data into
 # c_filename = "data.csv"
  
