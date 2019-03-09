@@ -3,9 +3,9 @@ import json
 import re
 import matplotlib.pyplot as plt
 import unicodedata
-# import csv
+import csv
  
-portPath = "COM1"	   		# Must match value shown on Arduino IDE
+portPath = "/dev/tty.usbmodem141101"	   		# Must match value shown on Arduino IDE
 baud = 115200				# Must match Arduino baud rate
 timeout = 999				# Seconds
 j_filename = "data.json"	# File to output data into
@@ -37,15 +37,17 @@ def initialization(serial):
 	
 	serial.flushInput()
 	
-	print "Please wait..." # Waiting for microcontroller to connect to GSM network
+	print("Please wait...") # Waiting for microcontroller to connect to GSM network
 	
-	serial_line=serial.readline()
-	while serial_line.find("Number of messages:")==-1:
-		print serial_line
-		serial_line=serial.readline()
+	serial_line=serial.readline().decode("utf-8")
+	print(serial_line.find("Number of messages:"))
+	while (serial_line.find("[ data ]")) == -1:
+		print ("in while")
+		print(serial_line)
+		serial_line=serial.readline().decode("utf-8")
 		
 	# Serial sometimes gets stuck here. If so, press enter
-	print "Ready to begin"
+	print("Ready to begin")
 	
 def read_serial_data(serial):
 	'''
@@ -189,7 +191,7 @@ def save_to_json(data, j_filename):
 # Main function
 
 # Initialize serial port
-print "Creating serial object..."
+print("Creating serial object...")
 serial_obj = create_serial_obj(portPath, baud, timeout)
 
 initialization(serial_obj)
