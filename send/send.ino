@@ -45,7 +45,7 @@ SdFat SD;
 #define FONA_POWER_ON_TIME  180  /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 
-char sendto[21] = "6472333143";   // 6472333143 (number of receiving arduino); IMPORTANT: Enter destination number here
+char sendto[21] = "6043674089";   // (604)367-4089 (number of receiving arduino); IMPORTANT: Enter destination number here
 
 // We default to using software serial. If you want to use hardware serial
 // (because softserial isnt supported) comment out the following three lines 
@@ -118,8 +118,6 @@ void setup() {
   Wire.begin();       // Initiate the Wire library and join the I2C bus as a master or slave
   while (!Serial);    // wait till serial gets initialized
 
-
-  
   //SD Initialization
   Serial.print("Initializing SD card...");
 

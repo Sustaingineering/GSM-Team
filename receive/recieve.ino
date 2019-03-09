@@ -29,7 +29,7 @@ File data;
 #define FONA_POWER_ON_TIME  180  /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 
-char sendto[21] = "6472333143";   // IMPORTANT: Enter destination number here
+//char sendto[21] = "6472333143";   // IMPORTANT: Enter destination number here
 char replybuffer[255];            // this is a large buffer for replies
 int timecounts = 0;
 int last_timecounts = 0;
