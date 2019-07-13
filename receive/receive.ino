@@ -64,8 +64,6 @@ volatile int8_t numsms;
 //that was just sent (either Delete#0 or Delete#1)
 
 void delete_SMS();
-uint16_t readnumber();
-char readBlocking();
 
 void setup() {
 
@@ -164,7 +162,7 @@ boolean time_sms() { // use millis to check the number of sms every second.
 void check_get_sms()
 {
   Serial.println(F("Start check_get_sms"));
-  if (numsms != fona.getNumSMS())
+  if (numsms != fona.getNumSMS()) //go inside this block when we receive a SMS message
   {
     Serial.println(F("Got into Flush Serial"));
     flushSerial();
@@ -309,49 +307,14 @@ void delete_SMS()
 {
   // delete an SMS
   flushSerial();
-  Serial.print(F("Delete #"));
-  Serial.println("4\r");
-  // Serial.println(Serial.read());
-  // int8_t msg_delete_number = numsms - 1; //messages start at an index of 0
-  // Serial.println(msg_delete_number, DEC);
-  // Serial.write(53);
-  // Serial.write(13); //CarriageReturn to "Enter" 'msg_delete_number' to delete most recent message
-  // Serial.print(msg_delete_number);
 
-  //Serial.read()? need to understand fully what the code in deleteSMS() does
-  //after more head scratching, then i can start discussing with abdul and leslie
+  int8_t msg_delete_number = numsms - 1; //messages start at an index of 0
 
-  uint8_t smsn = readnumber();
+  Serial.print(F("\n\rDeleting SMS #")); Serial.println(msg_delete_number);
 
-  Serial.print(F("\n\rDeleting SMS #")); Serial.println(smsn);
-  if (fona.deleteSMS(smsn)) {
+  if (fona.deleteSMS(msg_delete_number)) {
     Serial.println(F("OK!"));
   } else {
     Serial.println(F("Couldn't delete"));
   }
 }
-
-char readBlocking() 
-{
-  while (!Serial.available());
-  return Serial.read();
-}
-
-uint16_t readnumber() 
-{
-  uint16_t x = 0;
-  char c;
-  while (! isdigit(c = readBlocking())) {
-    //Serial.print(c);
-  }
-  
-  Serial.print(c);
-  x = c - '0';
-  while (isdigit(c = readBlocking())) {
-    Serial.print(c);
-    x *= 10;
-    x += c - '0';
-  }
-  return x;
-}
-
