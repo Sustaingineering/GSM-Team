@@ -45,7 +45,17 @@ volatile char ISR_Count = 0;
 #define FONA_POWER_ON_TIME  180  /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 
-char sendto[21] = "7789525137";//"7789391063";//"7782230498";//"7786684301";//"6043674089";//"6047283793"; //"7787722839";   // (604)367-4089 (number of receiving arduino); IMPORTANT: Enter destination number here
+/*
+List of Phone Numbers: 
+
+7789525137 - Forbes
+6047283793 - Abdul
+
+7789391063 - GSM1
+7789391268 - GSM2
+*/
+
+char sendto[21] = "7789391268";
 
 // We default to using software serial. If you want to use hardware serial
 // (because softserial isnt supported) comment out the following three lines
