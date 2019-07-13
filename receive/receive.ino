@@ -1,4 +1,4 @@
-// 22nd June,2019 
+// 22nd June,2019
 
 //SG_FONA folder must be included in \Documents\Arduino\libraries
 //Arduino must be set to port 1. Go to device manager -> Ports(COM & LPT) -> Arduino Uno -> Properties -> Port Settings -> Advanced -> COM Port Number. Then re-plug the USB.
@@ -20,17 +20,17 @@ File data;
 
 //EEPROM_R_W eeprom = EEPROM_R_W();
 
-#define FONA_TX 4    //Soft serial port
-#define FONA_RX 5    //Soft serial port
-#define FONA_RI 3    //let's test it!
+#define FONA_TX 4 //Soft serial port
+#define FONA_RX 5 //Soft serial port
+#define FONA_RI 3 //let's test it!
 #define FONA_RST 9
 
 #define FONA_POWER 8
-#define FONA_POWER_ON_TIME 180 /* 180ms*/
+#define FONA_POWER_ON_TIME 180   /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 
 //char sendto[21] = "6472333143";   // IMPORTANT: Enter destination number here //1158
-char replybuffer[255];            // this is a large buffer for replies
+char replybuffer[255]; // this is a large buffer for replies
 int timecounts = 0;
 int last_timecounts = 0;
 
@@ -51,21 +51,23 @@ SoftwareSerial *fonaSerial = &fonaSS;
 // Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 // Use this one for FONA 3G
 Adafruit_FONA_3G fona = Adafruit_FONA_3G(FONA_RST);
- 
-uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);    // Is it for reading from serial port?
+
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0); // Is it for reading from serial port?
 
 uint8_t type;
 
 volatile int8_t numsms;
-
 
 //we can try to delete all the previously stored messages in the GSM sim card during the set up before
 //we run the code/program. Then depending on the need, we can just keep deleting the recent message
 //that was just sent (either Delete#0 or Delete#1)
 
 void delete_SMS();
+void delete_all_SMS();
 
-void setup() {
+
+void setup()
+{
 
   pinMode(FONA_POWER, OUTPUT);
   pinMode(FONA_RI, INPUT);
@@ -74,15 +76,17 @@ void setup() {
   digitalWrite(FONA_POWER, LOW);
   delay(3000);
 
-  while (!Serial);                                            // wait till serial gets initialized
+  while (!Serial)
+    ; // wait till serial gets initialized
 
-  Serial.begin(115200);                                       // baud rate
+  Serial.begin(115200); // baud rate
   Serial.println(F("Sustaingineering 3G TxRx!!"));
   Serial.println(F("Initializing....(May take 3 seconds)"));
 
   fonaSerial->begin(4800);
-  while (!fona.begin(*fonaSerial)) {
-    Serial.println(F("Couldn't find FONA"));     // reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
+  while (!fona.begin(*fonaSerial))
+  {
+    Serial.println(F("Couldn't find FONA")); // reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
     delay(1000);
   }
   type = fona.type();
@@ -90,10 +94,11 @@ void setup() {
 
   Serial.println(F("Searching for network\n"));
   bool SIMFound = false;
-  for (int countdown = 600; countdown >= 0 && SIMFound == false; countdown--) {
+  for (int countdown = 600; countdown >= 0 && SIMFound == false; countdown--)
+  {
     //Serial.print(F("Countdown: "));
     //Serial.println(countdown);
-    uint8_t n = fona.getNetworkStatus();      // constantly check until network is connected to home    sendCheckReply(F("AT+CLVL="), i, ok_reply);
+    uint8_t n = fona.getNetworkStatus(); // constantly check until network is connected to home    sendCheckReply(F("AT+CLVL="), i, ok_reply);
     if (n == 1)
     {
       SIMFound = true;
@@ -103,44 +108,35 @@ void setup() {
 
       Serial.print("Number of sms first time: ");
       Serial.println(numsms);
-      
-      if (numsms != -1)
-      {
-        Serial.print(F("Number of messages before deleting: "));
-        Serial.println(numsms);
 
-        //delete all messages of SIM card
-        // if (numsms > 0)
-        // {
-        //   for (int j = numsms; j > 0; j --)
-        //   delete_SMS();
-        // }
-        //check number of messages
-        Serial.print(F("Number of messages after delete: "));
-        Serial.println(numsms);
-        break;
-      }
+      //delete all messages of SIM card
+      delete_all_SMS();
+      Serial.print(F("Number of messages after delete: "));
+      Serial.println(numsms);
     }
     // uint8_t m = fona.setSMSInterrupt(1);    // this is for setting up the Ring Indicator Pin
   }
   if (!SIMFound)
   {
     Serial.println(F("SIM card could not be found. Please ensure that your SIM card is compatible with dual-band UMTS/HSDPA850/1900MHz WCDMA + HSDPA."));
-    while (1) {}
+    while (1)
+    {
+    }
   }
 
-//  Serial.print("Initializing SD card...");
-//  if (!SD.begin(4)) { //This sets the cspin  to pin 4. This will have to be changed when the module is attatched
-//  Serial.println("initialization failed!");
-//  while (1);
-//  }
-//  Serial.println("initialization done.");
+  //  Serial.print("Initializing SD card...");
+  //  if (!SD.begin(4)) { //This sets the cspin  to pin 4. This will have to be changed when the module is attatched
+  //  Serial.println("initialization failed!");
+  //  while (1);
+  //  }
+  //  Serial.println("initialization done.");
 }
 
 void loop()
 {
   //Serial.println(F("Waiting for SMS"));
-  while (! Serial.available() ) {
+  while (!Serial.available())
+  {
     if (time_sms())
     {
       check_get_sms();
@@ -149,14 +145,16 @@ void loop()
   //Do other stuff
 }
 
-
-boolean time_sms() { // use millis to check the number of sms every second.
+boolean time_sms()
+{ // use millis to check the number of sms every second.
   timecounts = millis();
-  if (timecounts > last_timecounts + 1000) {
+  if (timecounts > last_timecounts + 1000)
+  {
     last_timecounts = timecounts;
     return 1;
   }
-  else return 0;
+  else
+    return 0;
 }
 
 void check_get_sms()
@@ -167,16 +165,19 @@ void check_get_sms()
     Serial.println(F("Got into Flush Serial"));
     flushSerial();
     numsms = fona.getNumSMS();
-    uint8_t smsn = numsms - 1;  // the sms# starts from 0
-    if (! fona.getSMSSender(smsn, replybuffer, 250)) {
+    uint8_t smsn = numsms - 1; // the sms# starts from 0
+    if (!fona.getSMSSender(smsn, replybuffer, 250))
+    {
       Serial.println(F("Failed!"));
       return;
     }
-    Serial.print(F("FROM: ")); Serial.println(replybuffer);
+    Serial.print(F("FROM: "));
+    Serial.println(replybuffer);
 
     // Retrieve SMS value.
     uint16_t smslen;
-    if (! fona.readSMS(smsn, replybuffer, 250, &smslen)) { // pass in buffer and max len!
+    if (!fona.readSMS(smsn, replybuffer, 250, &smslen))
+    { // pass in buffer and max len!
       Serial.println(F("Failed!"));
       return;
     }
@@ -187,7 +188,7 @@ void check_get_sms()
     */
 
     // Retrieve delimited values for use
-    char* vars[6];
+    char *vars[6];
     vars[0] = strtok(replybuffer, ",");
     for (int i = 1; i < 6; i++)
     {
@@ -238,14 +239,17 @@ void check_get_sms()
             }
     */
 
-    // Serial.print(F(" (")); 
+    // Serial.print(F(" ("));
     // Serial.println(smslen); //not too sure of its use
-    
+
+
+    //Delete messages after receiving and parsing message
+
     Serial.print(F("Number of messages before Delete SMS: "));
     Serial.println(numsms);
 
-    Serial.println(F("Start Deleting SMS"));
-    delete_SMS();
+    Serial.println(F("Start Deleting all SMS"));
+    delete_all_SMS();
 
     numsms = fona.getNumSMS();
     Serial.print(F("Number of messages after Delete SMS: "));
@@ -253,38 +257,46 @@ void check_get_sms()
 
     // Serial.println(F("***"));
     // Serial.println(F("Waiting for next SMS"));   // this is to promp user to send data
-    
+
     return;
   }
 }
 
-void flushSerial() {
+void flushSerial()
+{
   while (Serial.available())
     Serial.read();
 }
 
-uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) {
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout)
+{
   uint16_t buffidx = 0;
   boolean timeoutvalid = true;
-  if (timeout == 0) timeoutvalid = false;
+  if (timeout == 0)
+    timeoutvalid = false;
 
-  while (true) {
-    if (buffidx > maxbuff) {
+  while (true)
+  {
+    if (buffidx > maxbuff)
+    {
       //Serial.println(F("SPACE"));
       break;
     }
 
-    while (Serial.available()) {
-      char c =  Serial.read();
+    while (Serial.available())
+    {
+      char c = Serial.read();
 
       //Serial.print(c, HEX); Serial.print("#"); Serial.println(c);
 
-      if (c == '\r') continue;
-      if (c == 0xA) {
-        if (buffidx == 0)   // the first 0x0A is ignored.
+      if (c == '\r')
+        continue;
+      if (c == 0xA)
+      {
+        if (buffidx == 0) // the first 0x0A is ignored.
           continue;
 
-        timeout = 0;         // the second 0x0A is the end of the line
+        timeout = 0; // the second 0x0A is the end of the line
         timeoutvalid = true;
         break;
       }
@@ -292,16 +304,17 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) {
       buffidx++;
     }
 
-    if (timeoutvalid && timeout == 0) {
+    if (timeoutvalid && timeout == 0)
+    {
       //Serial.println(F("TIMEOUT"));
       break;
     }
     delay(1);
   }
-  buff[buffidx] = 0;  // null term
+  buff[buffidx] = 0; // null term
+
   return buffidx;
 }
-
 
 void delete_SMS()
 {
@@ -310,11 +323,26 @@ void delete_SMS()
 
   int8_t msg_delete_number = numsms - 1; //messages start at an index of 0
 
-  Serial.print(F("\n\rDeleting SMS #")); Serial.println(msg_delete_number);
+  Serial.print(F("\n\rDeleting SMS #"));
+  Serial.println(msg_delete_number);
 
-  if (fona.deleteSMS(msg_delete_number)) {
+  if (fona.deleteSMS(msg_delete_number))
+  {
     Serial.println(F("OK!"));
-  } else {
+  }
+  else
+  {
     Serial.println(F("Couldn't delete"));
+  }
+}
+
+void delete_all_SMS()
+{
+  numsms = fona.getNumSMS();
+
+  while (numsms > 0)
+  {
+    delete_SMS();
+    numsms = fona.getNumSMS();
   }
 }
