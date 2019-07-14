@@ -29,9 +29,8 @@ volatile char ISR_Count = 0;
 #include <SPI.h>
 //#include "SdFat.h"
 #include <Wire.h>
-//#include "DS3231.h"
-//Do not need this
-//#include <SD.h>
+//#include "DS3231.h" //fpr the humidity sensor
+#include <SD.h>
 
 //RTClib RTC;
 //SdFat SD;
@@ -42,7 +41,7 @@ volatile char ISR_Count = 0;
 #define FONA_RST 9
 
 #define FONA_POWER 8
-#define FONA_POWER_ON_TIME  180  /* 180ms*/
+#define FONA_POWER_ON_TIME 180   /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 
 /*
@@ -55,16 +54,16 @@ List of Phone Numbers:
 7789391268 - GSM2
 */
 
-char sendto[21] = "7789391268";
+char sendto[21] = "7789525137";
 
 // We default to using software serial. If you want to use hardware serial
 // (because softserial isnt supported) comment out the following three lines
 // and uncomment the HardwareSerial line
 #include <SoftwareSerial.h>
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
-SoftwareSerial sdSS = SoftwareSerial(6, 7);
+// SoftwareSerial sdSS = SoftwareSerial(6, 7);
 
-SoftwareSerial *sdSerial = &sdSS;
+// SoftwareSerial *sdSerial = &sdSS;
 SoftwareSerial *fonaSerial = &fonaSS;
 
 // Hardware serial is also possible!
@@ -75,7 +74,7 @@ SoftwareSerial *fonaSerial = &fonaSS;
 // Use this one for FONA 3G
 Adafruit_FONA_3G fona = Adafruit_FONA_3G(FONA_RST);
 
-uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);    // Is it for reading from serial port?
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0); // Is it for reading from serial port?
 
 uint8_t type;
 
@@ -83,39 +82,40 @@ volatile int8_t numsms;
 
 // Declare all global variables
 // Voltage Sensor
-double DivVoltage = 0;       // Voltage divider reading
-double SourceVoltage = 0;        // Final voltage reading result
+double DivVoltage = 0;    // Voltage divider reading
+double SourceVoltage = 0; // Final voltage reading result
 
 // Current Sensor
-double HallVoltage = 0;   // Voltage reading of Hall Effect
-double HallAmps = 0;      // Current result from Hall Effect Sensor
+double HallVoltage = 0; // Voltage reading of Hall Effect
+double HallAmps = 0;    // Current result from Hall Effect Sensor
 
 // Temperature Sensor
 double TempVolt = 0; //previously volt
-double Temp = 0;      // previously temp
+double Temp = 0;     // previously temp
 
 // Data Logging
 //File myFile;
 unsigned long Time;
 
-// Relay Circuit
-int RelayTest;
+// //Relay Circuit
+// int RelayTest;
 
 // Declare any global constants
-double RH = 1000;//test on a different prototype board    //981300;   // Voltage Divider High Resistance
-double RL = 1000;//test on a diffferent prototype board   //24743;    // Voltage Divider Low Resistance
+double RH = 1000; //test on a different prototype board    //981300;   // Voltage Divider High Resistance
+double RL = 1000; //test on a diffferent prototype board   //24743;    // Voltage Divider Low Resistance
 
-void setup() {
+void setup()
+{
 
   // Defining LED Interface pins
-  pinMode(2, OUTPUT);   // Arduino On LED
-  pinMode(3, OUTPUT);
+  // pinMode(2, OUTPUT); // Arduino On LED
+  // pinMode(3, OUTPUT); //not exactly sure about commenting out this one
 
   // Voltage LED
-  pinMode(5, OUTPUT);   // Current LED
-  pinMode(7, OUTPUT);   // Relay Open/Close LED
+  // pinMode(5, OUTPUT); // Current LED
+  // pinMode(7, OUTPUT); // Relay Open/Close LED
   pinMode(FONA_POWER, OUTPUT);
-//  pinMode(FONA_RST, INPUT);
+  //  pinMode(FONA_RST, INPUT);
   digitalWrite(FONA_POWER, HIGH);
   delay(FONA_POWER_ON_TIME);
   digitalWrite(FONA_POWER, LOW);
@@ -123,11 +123,31 @@ void setup() {
 
   Serial.begin(4800); //baud rate
 
-  Wire.begin();       // Initiate the Wire library and join the I2C bus as a master or slave
-  while (!Serial);    // wait till serial gets initialized
+  Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
+  while (!Serial)
+    ; // wait till serial gets initialized
 
   //SD Initialization
-  //  Serial.print("Initializing SD card...");
+
+  /*
+  Pin Setup:
+  SD_MISO D12
+  SD_MOSI D11
+  SD_SCK D13
+  SD_SS D10
+  VCC is 5V
+ */
+  const int chipSelect = 10;
+
+  Serial.println("Initializing SD card...");
+  if (!SD.begin(chipSelect))
+  {
+    Serial.println("SD card fail to initialize. Please ensure SD card is set up properly");
+    //don't do anything anymore
+    while (1)
+      ;
+  }
+  Serial.println("SD card initialized");
 
   /*  sdSerial->begin(4800);
     if (!SD.begin(10)) {
@@ -140,8 +160,9 @@ void setup() {
   Serial.println(F("Launching...."));
 
   fonaSerial->begin(4800);
-  while (!fona.begin(*fonaSerial)) {
-    Serial.println(F("Cannot find FONA. Please try rebooting."));     //reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
+  while (!fona.begin(*fonaSerial))
+  {
+    Serial.println(F("Cannot find FONA. Please try rebooting.")); //reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
     delay(1000);
   }
   type = fona.type();
@@ -149,10 +170,11 @@ void setup() {
 
   Serial.println(F("Searching for network...\n"));
   bool SIMFound = false;
-  for (int countdown = 600; countdown >= 0 && SIMFound == false; countdown--) {
+  for (int countdown = 600; countdown >= 0 && SIMFound == false; countdown--)
+  {
     //Serial.print(F("Countdown: "));
     //Serial.println(countdown);
-    uint8_t n = fona.getNetworkStatus();      // constantly check until network is connected to home    sendCheckReply(F("AT+CLVL="), i, ok_reply);
+    uint8_t n = fona.getNetworkStatus(); // constantly check until network is connected to home    sendCheckReply(F("AT+CLVL="), i, ok_reply);
     if (n == 1)
     {
       SIMFound = true;
@@ -164,10 +186,11 @@ void setup() {
   if (!SIMFound)
   {
     Serial.println(F("SIM card could not be found. Please ensure that your SIM card is compatible with dual-band UMTS/HSDPA850/1900MHz WCDMA + HSDPA."));
-    while (1) {}
+    while (1)
+    {
+    }
   }
 }
-
 
 void loop()
 {
@@ -179,14 +202,14 @@ void loop()
 
   float volt = voltage - 1670; //(while cold conjuction is 22 degree
   //   the voltage cross thermalcouple is 1.67v)
-  volt =  volt / 150; //(opamp apmplified 150 times)
+  volt = volt / 150;                //(opamp apmplified 150 times)
   float temp = (volt) / 0.041 + 22; //( 1 degree = 0.0404 mv in K type )
 
   //Serial.println(temp);
 
   VoltageDivider(); //voltage sensing <- updates LoadVoltage
-  HallEffect(); //current sensing <- updates HallAmps
-  Thermolcouple(); //temperature sensing <- updates Temp
+  HallEffect();     //current sensing <- updates HallAmps
+  Thermolcouple();  //temperature sensing <- updates Temp
 
   //  float LoadVoltage=-1;
   //  float LoadCurrent=-1;
@@ -213,29 +236,31 @@ void loop()
   //  delay(100); //not sure if this is necessary
 
   //this condition necessary to send for some reason (checks to makes sure thermocouple reading is within range to send)
-  if (SolTemp > 1000) {
+  if (SolTemp > 1000)
+  {
     SolTemp = 1000;
   }
 
   delay(1000); //this makes the initial send message to have no failures (a delay of 1800 works before as well)
-  
+
+  //when plug and unplug the USB blaster from the Arduino to the laptop,
+  //Serial monitor will stop printing while the GSM sheild will take some time to continue sending messages periodically
   send_sms(SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, WaterBreakerFlag);
 
   //SDLog();
 
   //  send_sms(LoadVoltage, LoadCurrent,Power,AtmTemp,SolTemp,WaterBreakerFlag);
-
 }
 
 void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag)
 { // send an SMS!
 
-//  Serial.println("Start send");
+  //  Serial.println("Start send");
   char message[0];
   bool loop = true;
   while (loop)
   {
-    flushSerial();    // THIS IS IMPORTANT! OTHERWISE what you typed in might be missing in what you send
+    flushSerial(); // THIS IS IMPORTANT! OTHERWISE what you typed in might be missing in what you send
     //          Serial.println("Serial Flushed");
     loop = false;
 
@@ -269,37 +294,44 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, 
 
   Serial.println(F("SMS sending succeeded."));
 
-
   Serial.println();
 }
 
-void flushSerial() {
+void flushSerial()
+{
   while (Serial.available())
     Serial.read();
 }
 
-uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) {
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout)
+{
   uint16_t buffidx = 0;
   boolean timeoutvalid = true;
-  if (timeout == 0) timeoutvalid = false;
+  if (timeout == 0)
+    timeoutvalid = false;
 
-  while (true) {
-    if (buffidx > maxbuff) {
+  while (true)
+  {
+    if (buffidx > maxbuff)
+    {
       //Serial.println(F("SPACE"));
       break;
     }
 
-    while (Serial.available()) {
-      char c =  Serial.read();
+    while (Serial.available())
+    {
+      char c = Serial.read();
 
       //Serial.print(c, HEX); Serial.print("#"); Serial.println(c);
 
-      if (c == '\r') continue;
-      if (c == 0xA) {
-        if (buffidx == 0)   // the first 0x0A is ignored.
+      if (c == '\r')
+        continue;
+      if (c == 0xA)
+      {
+        if (buffidx == 0) // the first 0x0A is ignored.
           continue;
 
-        timeout = 0;         // the second 0x0A is the end of the line
+        timeout = 0; // the second 0x0A is the end of the line
         timeoutvalid = true;
         break;
       }
@@ -307,20 +339,20 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) {
       buffidx++;
     }
 
-    if (timeoutvalid && timeout == 0) {
+    if (timeoutvalid && timeout == 0)
+    {
       //Serial.println(F("TIMEOUT"));
       break;
     }
     delay(1);
   }
-  buff[buffidx] = 0;  // null term
+  buff[buffidx] = 0; // null term
   return buffidx;
 }
 
-
-
 // Voltage Divider Sensor
-void VoltageDivider() {
+void VoltageDivider()
+{
   // Read Voltage at divider and convert to decimal
   int x = analogRead(A1);
   DivVoltage = x * (5.0 / 1023.0);
@@ -330,8 +362,9 @@ void VoltageDivider() {
 }
 
 // Hall Effect sensor
-void HallEffect() {
-  int x = analogRead(A0);     // Take reading
+void HallEffect()
+{
+  int x = analogRead(A0); // Take reading
 
   // Convert to decimal
   HallVoltage = x * (5.0 / 1023.0);
@@ -342,24 +375,27 @@ void HallEffect() {
 }
 
 // Thermolcouple sensor
-void Thermolcouple() {
+void Thermolcouple()
+{
   // Read sensor value and convert to mV
   int x = analogRead(A2);
   TempVolt = x * (5000.0 / 1023.0) + 25;
 
   // Check if upper voltage bound
-  if (TempVolt > 2500) {
-    double volt = TempVolt - 2500;    // Assuming cold junction at 22 degree
-    volt = volt / 123;                // OpAmp amplified 150 times
-    Temp = (volt / 0.041) + 25;       // 0.0404 mv/degree in K type
+  if (TempVolt > 2500)
+  {
+    double volt = TempVolt - 2500; // Assuming cold junction at 22 degree
+    volt = volt / 123;             // OpAmp amplified 150 times
+    Temp = (volt / 0.041) + 25;    // 0.0404 mv/degree in K type
   }
 
   // Else if lower bound
-  else {
-    double volt = 2500 - TempVolt;    // Assuming cold junction at 22 degree
+  else
+  {
+    double volt = 2500 - TempVolt; // Assuming cold junction at 22 degree
     // The voltage cross thermolcouple is 1.67v)
-    volt = volt / 123;                // OpAmp apmplified 150 times
-    Temp = 25 - (volt / 0.0404);      // 0.0404 mv/degree in K type
+    volt = volt / 123;           // OpAmp apmplified 150 times
+    Temp = 25 - (volt / 0.0404); // 0.0404 mv/degree in K type
   }
 }
 
