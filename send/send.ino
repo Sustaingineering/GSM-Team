@@ -1,14 +1,3 @@
-/*#include <BlockDriver.h>
-  #include <FreeStack.h>
-  #include <MinimumSerial.h>
-  #include <SdFat.h>
-  #include <SdFatConfig.h>
-  #include <sdios.h>
-  #include <SysCall.h>
-*/
-
-//#include <SD.h>
-
 //By Rico Jia, May 16, 2018
 
 //SG_FONA folder must be included in \Documents\Arduino\libraries
@@ -25,14 +14,13 @@ volatile char ISR_Count = 0;
 /*  #include <EEPROM_R_W.h>
     EEPROM_R_W eeprom = EEPROM_R_W(); */
 
-// Header files
+// Other Header files
 #include <SPI.h>
-//#include "SdFat.h"
-#include <Wire.h>
-//#include "DS3231.h" //fpr the humidity sensor
 #include <SD.h>
+#include "RTClib.h"
+// #include "DS3231.h" //fpr the humidity sensor
+// #include <Wire.h>
 
-//RTClib RTC;
 //SdFat SD;
 
 #define FONA_TX 4 //Soft serial port
@@ -43,6 +31,7 @@ volatile char ISR_Count = 0;
 #define FONA_POWER 8
 #define FONA_POWER_ON_TIME 180   /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
+#define FONA_SINGLE_MESSAGE_DELAY_TIME 1000
 
 /*
 List of Phone Numbers: 
@@ -94,11 +83,14 @@ double TempVolt = 0; //previously volt
 double Temp = 0;     // previously temp
 
 // Data Logging
-//File myFile;
+File myFile;
 unsigned long Time;
 
 // //Relay Circuit
 // int RelayTest;
+
+// // RTC library
+// RTClib RTC;
 
 // Declare any global constants
 double RH = 1000; //test on a different prototype board    //981300;   // Voltage Divider High Resistance
@@ -123,20 +115,20 @@ void setup()
 
   Serial.begin(4800); //baud rate
 
-  Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
+  // Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
   while (!Serial)
     ; // wait till serial gets initialized
 
   //SD Initialization
 
   /*
-  Pin Setup:
-  SD_MISO D12
-  SD_MOSI D11
-  SD_SCK D13
-  SD_SS D10
-  VCC is 5V
- */
+    Pin Setup (from Arduino UNO pinout):
+    MISO D12
+    MOSI D11
+    SCK D13
+    SS D10
+    VCC is 5V
+  */
   const int chipSelect = 10;
 
   Serial.println("Initializing SD card...");
@@ -149,13 +141,8 @@ void setup()
   }
   Serial.println("SD card initialized");
 
-  /*  sdSerial->begin(4800);
-    if (!SD.begin(10)) {
-      Serial.println("initialization SD failed!");
-      while (1);
-    }
-    Serial.println("initialization done.");
-  */
+  // Initializing FONA
+
   Serial.println(F("Welcome to Sustaingineering 3G TxRx."));
   Serial.println(F("Launching...."));
 
@@ -241,15 +228,17 @@ void loop()
     SolTemp = 1000;
   }
 
-  delay(1000); //this makes the initial send message to have no failures (a delay of 1800 works before as well)
+  //Storing data into SD card
+
+  SDLog();
+
+  //Sending SMS
+
+  delay(1000); //this makes the initial send message to have no failures (a delay of 1800 works before as well) ****apparently a Defined constant on top does not work as the way it should
 
   //when plug and unplug the USB blaster from the Arduino to the laptop,
   //Serial monitor will stop printing while the GSM sheild will take some time to continue sending messages periodically
   send_sms(SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, WaterBreakerFlag);
-
-  //SDLog();
-
-  //  send_sms(LoadVoltage, LoadCurrent,Power,AtmTemp,SolTemp,WaterBreakerFlag);
 }
 
 void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag)
@@ -399,39 +388,53 @@ void Thermolcouple()
   }
 }
 
-/*
 //For writing to SD (note file will be called "test155.txt")
-void SDLog() {
+void SDLog()
+{
   // Open test file
   // The file name testNUM is the text file we write to
-  myFile = SD.open("timertestreal15.txt", FILE_WRITE);
+  String filename = "testSD_4";
+  String file_format = ".txt";
+  filename = filename + file_format;
+
+  myFile = SD.open(filename, FILE_WRITE);
 
   // if the file opened okay, write to it
-  if (myFile) {
-    // Record time
-    //DateTime now = RTC.now();
-    myFile.print("Time (s) = ");
-    //   myFile.print(now.year(), DEC);
-    myFile.print('/');
+  if (myFile)
+  {
+    Serial.print("Writing to ");
+    Serial.print(filename);
+    Serial.print(" ... ");
+    //-------------------------------------------------------
+    // // Record time
+    // DateTime now();
+    // Serial.print("Year: ");
+    // Serial.println(now.year());    //might need to go for RTC example from Arduino
+    // DateTime now = RTC.now();
+    // myFile.print("Time (s) = ");
+    // myFile.print(now.year(), DEC);
+    // myFile.print('/');
     // myFile.print(now.month(), DEC);
-    myFile.print('/');
-    //myFile.print(now.day(), DEC);
-    myFile.print(' ');
-    //myFile.print(now.hour(), DEC);
-    myFile.print(':');
-    //if(now.minute() < 10){
-    //myFile.print('0');
-    //}
-    //myFile.print(now.minute(), DEC);
-    myFile.print(':');
-    //if(now.second() < 10){
-    //myFile.print('0');
-    //}
-    //myFile.print(now.second(), DEC);
-
+    // myFile.print('/');
+    // myFile.print(now.day(), DEC);
+    // myFile.print(' ');
+    // myFile.print(now.hour(), DEC);
+    // myFile.print(':');
+    // if (now.minute() < 10)
+    // {
+    //   myFile.print('0');
+    // }
+    // myFile.print(now.minute(), DEC);
+    // myFile.print(':');
+    // if (now.second() < 10)
+    // {
+    //   myFile.print('0');
+    // }
+    // myFile.print(now.second(), DEC);
+    //-------------------------------------------------------
     // Record divider voltage
     myFile.print("\t Divider Voltage = ");
-    myFile.print(DivVoltage);
+    myFile.print(DivVoltage); //ex. myFile.print(10) will cause the file to not open
 
     // Record panel voltage
     myFile.print("\t Source Voltage = ");
@@ -451,9 +454,12 @@ void SDLog() {
 
     // close the file:
     myFile.close();
-  } else {
+    Serial.println("done");
+  }
+  else
+  {
     // if the file didn't open, print an error:
-    Serial.println("error opening timertest10.txt");
+    Serial.print("error opening file ");
+    Serial.println(filename);
   }
 }
-*/
