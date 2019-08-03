@@ -92,12 +92,12 @@ double Temp = 0;      // previously temp
 //File myFile;
 unsigned long Time;
 
-// Relay Circuit
-int RelayTest;
-
 // Declare any global constants
 double RH = 1000;//test on a different prototype board    //981300;   // Voltage Divider High Resistance
 double RL = 1000;//test on a diffferent prototype board   //24743;    // Voltage Divider Low Resistance
+
+//for the Relay
+int PWM_relay_outpin = 10; //output signal to relay for switching
 
 void setup() {
 
@@ -114,6 +114,10 @@ void setup() {
   delay(FONA_POWER_ON_TIME);
   digitalWrite(FONA_POWER, LOW);
   delay(3000);
+
+//for Relay
+pinMode(PWM_relay_outpin, OUTPUT);
+
 
   Serial.begin(4800); //baud rate
 
@@ -212,12 +216,25 @@ void loop()
   }
 
   delay(800);
-  
+
   send_sms(SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, WaterBreakerFlag);
 
   //SDLog();
 
   //  send_sms(LoadVoltage, LoadCurrent,Power,AtmTemp,SolTemp,WaterBreakerFlag);
+  byte PWM_cycle;
+//relay logic
+  if ((SourceVoltage > 170)||(HallAmps > 15)){
+    PWM_cycle = 26; //0.5VDC to open the relay circuit
+    analogWrite (PWM_relay_outpin, PWM_cycle);
+  }
+
+  else {
+    PWM_cycle = 179; //3.5 VDC to close the relay circuit
+    analogWrite(PWM_relay_outpin, PWM_cycle);
+  }
+  }
+
 
 }
 
@@ -356,6 +373,7 @@ void Thermolcouple() {
     Temp = 25 - (volt / 0.0404);      // 0.0404 mv/degree in K type
   }
 }
+
 
 /*
 //For writing to SD (note file will be called "test155.txt")
