@@ -17,7 +17,7 @@ volatile char ISR_Count = 0;
 // Other Header files
 #include <SPI.h>
 #include <SD.h>
-#include "RTClib.h"
+//#include "RTClib.h"
 // #include "DS3231.h" //fpr the humidity sensor
 // #include <Wire.h>
 
@@ -77,10 +77,16 @@ double SourceVoltage = 0; // Final voltage reading result
 // Current Sensor
 double HallVoltage = 0; // Voltage reading of Hall Effect
 double HallAmps = 0;    // Current result from Hall Effect Sensor
+float Power = 0;
 
 // Temperature Sensor
 double TempVolt = 0; //previously volt
 double Temp = 0;     // previously temp
+float AtmTemp = 0;
+float SolTemp = 0;
+
+//Water Pump Sensor
+bool WaterBreakerFlag = false;
 
 // Data Logging
 File myFile;
@@ -202,14 +208,14 @@ void loop()
   //  float LoadCurrent=-1;
   //  float Power=-1;
 
-  float Power = SourceVoltage * HallAmps;
+  Power = SourceVoltage * HallAmps;
 
   //  float AtmTemp = 100;
-  float SolTemp = temp; //I have to set SolTemp to some variable (haven't tried 100.0 though)
+  SolTemp = temp; //I have to set SolTemp to some variable (haven't tried 100.0 though)
 
-  float AtmTemp = Temp;
+  AtmTemp = Temp;
   //  float SolTemp=temp; //when i print this, it does not work
-  bool WaterBreakerFlag = false;
+  WaterBreakerFlag = false;
 
   /*
      Analog Pin Assignments for Measurement Variables
@@ -393,17 +399,17 @@ void SDLog()
 {
   // Open test file
   // The file name testNUM is the text file we write to
-  String filename = "testSD_4";
-  String file_format = ".txt";
-  filename = filename + file_format;
+//  String filename = "test155";
+//  String file_format = ".txt";
+//  filename = filename + file_format;
 
-  myFile = SD.open(filename, FILE_WRITE);
+  myFile = SD.open("test123.txt", FILE_WRITE);
 
   // if the file opened okay, write to it
   if (myFile)
   {
     Serial.print("Writing to ");
-    Serial.print(filename);
+//    Serial.print(filename);
     Serial.print(" ... ");
     //-------------------------------------------------------
     // // Record time
@@ -432,25 +438,29 @@ void SDLog()
     // }
     // myFile.print(now.second(), DEC);
     //-------------------------------------------------------
-    // Record divider voltage
-    myFile.print("\t Divider Voltage = ");
-    myFile.print(DivVoltage); //ex. myFile.print(10) will cause the file to not open
 
     // Record panel voltage
-    myFile.print("\t Source Voltage = ");
     myFile.print(SourceVoltage);
-
-    // Record hall effect voltage signal
-    myFile.print("\t Hall Voltage = ");
-    myFile.print(HallVoltage);
-
+    myFile.print(",");
+    
     // Record panel current
-    myFile.print("\t Panel Current = ");
     myFile.print(HallAmps);
+    myFile.print(",");
 
-    // Record temperature (may add another)
-    myFile.print("\t Panel Temperature = ");
-    myFile.println(Temp);
+    // Record panel power
+    myFile.print(Power);
+    myFile.print(",");
+
+    // Record atmospheric temperature
+    myFile.print(AtmTemp);
+    myFile.print(",");
+
+    // Record solar panel temperature
+    myFile.print(SolTemp);
+    myFile.print(",");
+
+    // Record Water Breaker Flag
+    myFile.println(WaterBreakerFlag);
 
     // close the file:
     myFile.close();
@@ -459,7 +469,7 @@ void SDLog()
   else
   {
     // if the file didn't open, print an error:
-    Serial.print("error opening file ");
-    Serial.println(filename);
+    Serial.println("error opening file ");
+//    Serial.println(filename);
   }
 }
