@@ -403,14 +403,15 @@ void SDLog()
 //  String file_format = ".txt";
 //  filename = filename + file_format;
 
-  myFile = SD.open("test123.csv", FILE_WRITE);
+  //for SD Fat cards, the maximum number of characters for file names is 8 (excluding '.' and file extension)
+//  myFile = SD.open("test123.csv", FILE_WRITE);
 
   // if the file opened okay, write to it
-  if (myFile)
-  {
-    Serial.print("Writing to ");
-//    Serial.print(filename);
-    Serial.print(" ... ");
+//  if (myFile)
+//  {
+//    Serial.print("Writing to ");
+////    Serial.print(filename);
+//    Serial.print(" ... ");
     //-------------------------------------------------------
     // // Record time
     // DateTime now();
@@ -437,7 +438,7 @@ void SDLog()
     //   myFile.print('0');
     // }
     // myFile.print(now.second(), DEC);
-    //-------------------------------------------------------
+//    //-------------------------------------------------------
 //
 //    // Record panel voltage
 //    myFile.print(SourceVoltage);
@@ -448,31 +449,44 @@ void SDLog()
 //    myFile.print(",");
 //
 //    // Record panel power
-//    myFile.print({Power);
+//    myFile.print(Power);
 //    myFile.print(",");
 //
 //    // Record atmospheric temperature
 //    myFile.print(AtmTemp);
 //    myFile.print(",");
 //
-//    // Record atmospheric temperature
-//    myFile.print(AtmTemp);
+//    // Record solar panel temperature
+//    myFile.print(SolTemp);
 //    myFile.print(",");
+//
+//    // Record Water Breaker Flag
+//    myFile.println(WaterBreakerFlag);
 //
 //    // close the file:
 //    myFile.close();
 //    Serial.println("done");
-    String str;
-    str = (String)(SourceVoltage) + "," + (String)(HallAmps) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
-    myFile.println(str);
-    delay(1000);
+//  }
+//  else
+//  {
+//    // if the file didn't open, print an error:
+//    Serial.println("error opening file ");
+////    Serial.println(filename);
+//  }
+
+  // re-open the file for reading:
+  myFile = SD.open("test123.csv");
+  if (myFile) {
+    Serial.println("test123.csv:");
+
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    // close the file:
     myFile.close();
-    Serial.println("done");
-  }
-  else
-  {
+  } else {
     // if the file didn't open, print an error:
-    Serial.println("error opening file ");
-//    Serial.println(filename);
+    Serial.println("error opening test.txt");
   }
 }
