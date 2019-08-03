@@ -412,31 +412,6 @@ void SDLog()
 //    Serial.print(filename);
     Serial.print(" ... ");
     //-------------------------------------------------------
-    // // Record time
-    // DateTime now();
-    // Serial.print("Year: ");
-    // Serial.println(now.year());    //might need to go for RTC example from Arduino
-    // DateTime now = RTC.now();
-    // myFile.print("Time (s) = ");
-    // myFile.print(now.year(), DEC);
-    // myFile.print('/');
-    // myFile.print(now.month(), DEC);
-    // myFile.print('/');
-    // myFile.print(now.day(), DEC);
-    // myFile.print(' ');
-    // myFile.print(now.hour(), DEC);
-    // myFile.print(':');
-    // if (now.minute() < 10)
-    // {
-    //   myFile.print('0');
-    // }
-    // myFile.print(now.minute(), DEC);
-    // myFile.print(':');
-    // if (now.second() < 10)
-    // {
-    //   myFile.print('0');
-    // }
-    // myFile.print(now.second(), DEC);
     //-------------------------------------------------------
 //
 //    // Record panel voltage
