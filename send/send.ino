@@ -1,5 +1,3 @@
-//By Rico Jia, May 16, 2018
-
 //SG_FONA folder must be included in \Documents\Arduino\libraries
 //Arduino must be set to port 1. Go to device manager -> Ports(COM & LPT) -> Arduino Uno -> Properties -> Port Settings -> Advanced -> COM Port Number. Then re-plug the USB.
 //Serial may need to be set to 4800bps manually first. On my device, this was the default.
@@ -18,7 +16,7 @@ volatile char ISR_Count = 0;
 #include <SPI.h>
 #include <SD.h>
 //#include "RTClib.h"
-// #include "DS3231.h" //fpr the humidity sensor
+#include "DS3231.h" //fpr the humidity sensor
 // #include <Wire.h>
 
 //SdFat SD;
@@ -91,6 +89,8 @@ bool WaterBreakerFlag = false;
 // Data Logging
 File myFile;
 unsigned long Time;
+
+
 
 // //Relay Circuit
 // int RelayTest;
@@ -183,6 +183,7 @@ void setup()
     {
     }
   }
+//   rtc.begin(); // Initialize the rtc object
 }
 
 void loop()
@@ -222,20 +223,24 @@ void loop()
      SourceVoltage: A1
      HallAmps: A0
      Power: calculation from code
-     AtmTemp: A2
+     AtmTemp: A2MM
      SolTemp: A2
      WaterBreakerFlag: assigned from code
   */
   //  delay(100); //not sure if this is necessary
+
+  
 
   //this condition necessary to send for some reason (checks to makes sure thermocouple reading is within range to send)
   if (SolTemp > 1000)
   {
     SolTemp = 1000;
   }
-
   //Storing data into SD card
 
+
+//  Serial.println(rtc.getTimeStr());
+  
   SDLog();
 
   //Sending SMS
@@ -263,8 +268,7 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, 
     //          Serial.println((String)LoadVoltage);
 
     String str;
-    str = (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
-
+    str =  (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
     //          message[str.length()+1];
     //          Serial.println("str made");
     //          Serial.print("str content: ");
@@ -393,6 +397,7 @@ void Thermolcouple()
     Temp = 25 - (volt / 0.0404); // 0.0404 mv/degree in K type
   }
 }
+
 
 //For writing to SD (note file will be called "test155.txt")
 void SDLog()
