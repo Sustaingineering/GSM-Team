@@ -14,12 +14,14 @@ volatile char ISR_Count = 0;
 
 // Other Header files
 #include <SPI.h>
-#include <SD.h>
-//#include "RTClib.h"
-#include "DS3231.h" //fpr the humidity sensor
-// #include <Wire.h>
+#include "SdFat.h"
+#include "DS3231.h" 
+#include <Wire.h>
 
-//SdFat SD;
+
+
+SdFat SD;
+
 
 #define FONA_TX 4 //Soft serial port
 #define FONA_RX 5 //Soft serial port
@@ -95,8 +97,7 @@ unsigned long Time;
 // //Relay Circuit
 // int RelayTest;
 
-// // RTC library
-// RTClib RTC;
+
 
 // Declare any global constants
 double RH = 1000; //test on a different prototype board    //981300;   // Voltage Divider High Resistance
@@ -120,7 +121,7 @@ void setup()
   delay(3000);
 
   Serial.begin(4800); //baud rate
-
+  Wire.begin();
   // Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
   while (!Serial)
     ; // wait till serial gets initialized
@@ -136,14 +137,12 @@ void setup()
     VCC is 5V
   */
   const int chipSelect = 10;
-
-  Serial.println("Initializing SD card...");
-  if (!SD.begin(chipSelect))
-  {
-    Serial.println("SD card fail to initialize. Please ensure SD card is set up properly");
-    //don't do anything anymore
-    while (1)
-      ;
+ Serial.println("Initializing SD card...");
+ if (!SD.begin(chipSelect))
+ {
+   Serial.println("SD card fail to initialize. Please ensure SD card is set up properly");
+   //don't do anything anymore
+   while (1);
   }
   Serial.println("SD card initialized");
 
@@ -419,29 +418,48 @@ void SDLog()
     //-------------------------------------------------------
     //-------------------------------------------------------
 //
-//    // Record panel voltage
-//    myFile.print(SourceVoltage);
-//    myFile.print(",");
-//    
-//    // Record panel current
-//    myFile.print(HallAmps);
-//    myFile.print(",");
-//
-//    // Record panel power
-//    myFile.print({Power);
-//    myFile.print(",");
-//
-//    // Record atmospheric temperature
-//    myFile.print(AtmTemp);
-//    myFile.print(",");
-//
-//    // Record atmospheric temperature
-//    myFile.print(AtmTemp);
-//    myFile.print(",");
-//
-//    // close the file:
-//    myFile.close();
-//    Serial.println("done");
+   DateTime now = RTC.now();
+   myFile.print("Time (s) = ");
+   myFile.print(now.year(), DEC);
+   myFile.print('/');
+   myFile.print(now.month(), DEC);
+   myFile.print('/');
+   myFile.print(now.day(), DEC);
+   myFile.print(' ');
+   myFile.print(now.hour(), DEC);
+   myFile.print(':');
+   if(now.minute() < 10){
+     myFile.print('0');
+   }
+   myFile.print(now.minute(), DEC);
+   myFile.print(':');
+   if(now.second() < 10){
+     myFile.print('0');
+   }
+   myFile.print(now.second(), DEC);
+    // Record panel voltage
+    myFile.print(SourceVoltage);
+    myFile.print(",");
+    
+    // Record panel current
+    myFile.print(HallAmps);
+    myFile.print(",");
+
+    // Record panel power
+    myFile.print({Power);
+    myFile.print(",");
+
+    // Record atmospheric temperature
+    myFile.print(AtmTemp);
+    myFile.print(",");
+
+    // Record atmospheric temperature
+    myFile.print(AtmTemp);
+    myFile.print(",");
+
+    // close the file:
+    myFile.close();
+    Serial.println("done");
     String str;
     str = (String)(SourceVoltage) + "," + (String)(HallAmps) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
     myFile.println(str);
