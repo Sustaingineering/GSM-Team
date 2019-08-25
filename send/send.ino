@@ -14,14 +14,12 @@ volatile char ISR_Count = 0;
 
 // Other Header files
 #include <SPI.h>
-#include "SdFat.h"
-#include "DS3231.h" 
-#include <Wire.h>
+#include <SD.h>
+//#include "RTClib.h"
+#include "DS3231.h" //fpr the humidity sensor
+// #include <Wire.h>
 
-
-
-SdFat SD;
-
+//SdFat SD;
 
 #define FONA_TX 4 //Soft serial port
 #define FONA_RX 5 //Soft serial port
@@ -35,10 +33,8 @@ SdFat SD;
 
 /*
 List of Phone Numbers: 
-
 7789525137 - Forbes
 6047283793 - Abdul
-
 7789391063 - GSM1
 7789391268 - GSM2
 */
@@ -97,7 +93,8 @@ unsigned long Time;
 // //Relay Circuit
 // int RelayTest;
 
-
+// // RTC library
+// RTClib RTC;
 
 // Declare any global constants
 double RH = 1000; //test on a different prototype board    //981300;   // Voltage Divider High Resistance
@@ -121,7 +118,7 @@ void setup()
   delay(3000);
 
   Serial.begin(4800); //baud rate
-  Wire.begin();
+
   // Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
   while (!Serial)
     ; // wait till serial gets initialized
@@ -137,12 +134,14 @@ void setup()
     VCC is 5V
   */
   const int chipSelect = 10;
- Serial.println("Initializing SD card...");
- if (!SD.begin(chipSelect))
- {
-   Serial.println("SD card fail to initialize. Please ensure SD card is set up properly");
-   //don't do anything anymore
-   while (1);
+
+  Serial.println("Initializing SD card...");
+  if (!SD.begin(chipSelect))
+  {
+    Serial.println("SD card fail to initialize. Please ensure SD card is set up properly");
+    //don't do anything anymore
+    while (1)
+      ;
   }
   Serial.println("SD card initialized");
 
@@ -418,25 +417,6 @@ void SDLog()
     //-------------------------------------------------------
     //-------------------------------------------------------
 //
-   DateTime now = RTC.now();
-   myFile.print("Time (s) = ");
-   myFile.print(now.year(), DEC);
-   myFile.print('/');
-   myFile.print(now.month(), DEC);
-   myFile.print('/');
-   myFile.print(now.day(), DEC);
-   myFile.print(' ');
-   myFile.print(now.hour(), DEC);
-   myFile.print(':');
-   if(now.minute() < 10){
-     myFile.print('0');
-   }
-   myFile.print(now.minute(), DEC);
-   myFile.print(':');
-   if(now.second() < 10){
-     myFile.print('0');
-   }
-   myFile.print(now.second(), DEC);
     // Record panel voltage
     myFile.print(SourceVoltage);
     myFile.print(",");
@@ -446,7 +426,7 @@ void SDLog()
     myFile.print(",");
 
     // Record panel power
-    myFile.print({Power);
+    myFile.print(Power);
     myFile.print(",");
 
     // Record atmospheric temperature
