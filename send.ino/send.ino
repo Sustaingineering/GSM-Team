@@ -158,9 +158,7 @@ void setup()
 void loop()
 {
   // Construct Real Time string
-
-  String RTCStr = rtc_string(); //save some memory; therefore, write a function
-    
+      
   // -------------------------------------------
   // Sensing Data
   /*
@@ -204,41 +202,34 @@ void loop()
   // ------------------------------------------- 
   //Sending SMS
   
-  // 5000ms eliminates initial sending failures for RTC timer and Fona SMS; also works for opening RTC timer and hopefully writing date and time in file
+  delay(1000);
   
-  delay(5000);
-  
-  send_sms(RTCStr, SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, Humidity, WaterBreakerFlag);
+  send_sms(SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, Humidity, WaterBreakerFlag);
 }
 
-String rtc_string()
-{
-  DateTime now = rtc.now();
-
-  //return RTC time format: YYYY/M/D-h:m:s (future improvements: do boolean logic to make yyyy/mm/dd-hh:mm:ss)
-  //feel free to change the string format to your needs!
-  return (String)(now.year()) + "/" + (String)(now.month()) + "/" + (String)(now.day()) + "-" + (String)(now.hour()) + ":" + (String)(now.minute()) + ":" + (String)(now.second()) ;
-}
-
-void send_sms(String RTC, float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, float Humdity, bool WaterBreakerFlag)
+void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, float Humdity, bool WaterBreakerFlag)
 { 
+
+  //rtc time
+
+  DateTime now = rtc.now(); //have to do this inside send function for continous successful rtc time data sending
+
+  //fix hour, minute, and seconds format since they are only integers in the RTC library
+  String rtc_hour = ((now.hour() >= 10) ? (String)(now.hour()) : "0" + (String)(now.hour()));
+  String rtc_minute = ((now.minute() >= 10) ? (String)(now.minute()) : "0" + (String)(now.minute()));
+  String rtc_second = ((now.second() >= 10) ? (String)(now.second()) : "0" + (String)(now.second()));
+
+  // --------------
   
   // send an SMS!
-  //  Serial.println("Start send");
   char message[0];
-  bool loop = true;
-  while (loop)
-  {
-    flushSerial(); // THIS IS IMPORTANT! OTHERWISE what you typed in might be missing in what you send
-    loop = false;
     
-    String str;
-    str = RTC + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(Humdity) + "," + (String)(WaterBreakerFlag);
+  String str;
+  str = (String)(now.year()) + "/" + (String)(now.month()) + "/" + (String)(now.day()) + "-" + rtc_hour + ":" + rtc_minute + ":" + rtc_second + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(Humdity) + "," + (String)(WaterBreakerFlag);
 
-    Serial.print("str content: ");
-    Serial.println(str);
-    str.toCharArray(message, 141);
-  }
+  Serial.print("str content: ");
+  Serial.println(str);
+  str.toCharArray(message, 141);
   
   Serial.print(F("Your message is: "));
   Serial.println(message);
@@ -249,12 +240,6 @@ void send_sms(String RTC, float LoadVoltage, float LoadCurrent, float Power, flo
   }
   Serial.println(F("SMS sending succeeded."));
   Serial.println();
-}
-
-void flushSerial()
-{
-  while (Serial.available())
-    Serial.read();
 }
 
 // Humidity Sensor
