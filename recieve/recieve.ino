@@ -127,11 +127,12 @@ void setup() {
 
 void loop()
 {
+  //Serial.println(F("Waiting for SMS"));
   Serial.println("Delete all SMS");
   delete_SMS_all();
   
-  //Serial.println(F("Waiting for SMS"));
   while (! Serial.available() ) {
+    
     if (time_sms())
     {
       check_get_sms();
@@ -180,22 +181,36 @@ void check_get_sms()
     // Retrieve delimited values for use
     char* vars[6];
     vars[0] = strtok(replybuffer, ",");
-    for (int i = 1; i < 6; i++)
+    for (int i = 1; i < 8; i++)
     {
       vars[i] = strtok(NULL, ",");
     }
-    Serial.print(F("Load Voltage: "));
+    Serial.print(F("RTC Time [YYYY/MM/DD-hh:mm:ss]: "));
     Serial.println(vars[0]);
-    Serial.print(F("Load Current: "));
+    Serial.print(F("Load Voltage [V]: "));
     Serial.println(vars[1]);
-    Serial.print(F("Power: "));
+    Serial.print(F("Load Current [A]: "));
     Serial.println(vars[2]);
-    Serial.print(F("Atmospheric Temperature: "));
+    Serial.print(F("Power [W]: "));
     Serial.println(vars[3]);
-    Serial.print(F("Solar Panel Temperature: "));
+    Serial.print(F("Atmospheric Temperature [^oC]: "));
     Serial.println(vars[4]);
-    Serial.print(F("Water Breaker Flag: "));
+    Serial.print(F("Solar Panel Temperature [^oC]: "));
     Serial.println(vars[5]);
+    Serial.print(F("Relative Humidity [%]: "));
+    Serial.println(vars[6]);
+    Serial.print(F("Water Breaker Flag: "));
+    Serial.println(vars[7]);
+
+
+    //Since all messages are deleted in the beginning, we just need to delete the current message at index 0
+    
+    if(fona.deleteSMS(0)) {
+      Serial.println(F("Deleted SMS index #0"));
+    } else {
+      Serial.println(F("Couldn't delete"));
+    }
+    
     /*
             // Read file from memory
             // File is overwritten when writing to SD, so we must first retrieve the current contents of the file
