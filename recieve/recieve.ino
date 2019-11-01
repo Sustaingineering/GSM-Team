@@ -20,9 +20,9 @@ File data;
 
 //EEPROM_R_W eeprom = EEPROM_R_W();
 
-#define FONA_TX 4    //Soft serial port
-#define FONA_RX 5    //Soft serial port
-#define FONA_RI 3    //let's test it!
+#define FONA_TX 2 //4    //Soft serial port
+#define FONA_RX 3 //5    //Soft serial port
+//#define FONA_RI 3    //let's test it!
 #define FONA_RST 9
 
 #define FONA_POWER 8
@@ -70,7 +70,7 @@ uint16_t readnumber();
 void setup() {
 
   pinMode(FONA_POWER, OUTPUT);
-  pinMode(FONA_RI, INPUT);
+  //pinMode(FONA_RI, INPUT);
   digitalWrite(FONA_POWER, HIGH);
   delay(FONA_POWER_ON_TIME);
   digitalWrite(FONA_POWER, LOW);
@@ -127,6 +127,9 @@ void setup() {
 
 void loop()
 {
+  Serial.println("Delete all SMS");
+  delete_SMS_all();
+  
   //Serial.println(F("Waiting for SMS"));
   while (! Serial.available() ) {
     if (time_sms())
@@ -155,7 +158,7 @@ void check_get_sms()
     Serial.println(F("Got into Flush Serial"));
     flushSerial();
     numsms = fona.getNumSMS();
-    uint8_t smsn = numsms - 1;  // the sms# starts from 0
+    uint8_t smsn = numsms - 1;  // the sms# (aka SMS index) starts from 0
     if (! fona.getSMSSender(smsn, replybuffer, 250)) {
       Serial.println(F("Failed!"));
       return;
@@ -297,6 +300,31 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) {
   buff[buffidx] = 0;  // null term
   return buffidx;
 }
+
+
+void delete_SMS_all()
+{
+  flushSerial();
+
+  int8_t num_SMS = fona.getNumSMS();
+  if (num_SMS < 0) {
+    Serial.println(F("There are no SMS messages"));
+    return;
+  }
+
+  //delete all SMS
+
+  for(int i = 0; i < num_SMS; i++) {
+    if(fona.deleteSMS(i)) {
+      Serial.println(F("Deleted SMS index # "));
+    } else {
+      Serial.println(F("Couldn't delete"));
+    }
+  }
+  
+  Serial.println(F("All messages are cleared"));
+}
+
 
 /*
 
