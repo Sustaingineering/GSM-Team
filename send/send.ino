@@ -14,8 +14,11 @@ volatile char ISR_Count = 0;
 #include "RTClib.h"
 #include <Wire.h>
 #include <DHT.h>
+
+//IMPORTANT: either use 2 & 3 or 4 & 5 for the TX and RX respectively for Software Serial!
 #define FONA_TX 2 //Soft serial port
 #define FONA_RX 3 //Soft serial port
+
 #define FONA_RST 9
 #define FONA_POWER 8
 #define FONA_POWER_ON_TIME 180   /* 180ms*/
