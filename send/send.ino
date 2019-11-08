@@ -13,11 +13,10 @@ volatile char ISR_Count = 0;
 #include <SPI.h>
 #include "RTClib.h"
 #include <Wire.h>
-#include <DHT.h>
 
 //IMPORTANT: either use 2 & 3 or 4 & 5 for the TX and RX respectively for Software Serial!
-#define FONA_TX 2 //Soft serial port
-#define FONA_RX 3 //Soft serial port
+#define FONA_TX 4 //Soft serial port
+#define FONA_RX 5 //Soft serial port
 
 #define FONA_RST 9
 #define FONA_POWER 8
@@ -32,7 +31,7 @@ List of Phone Numbers:
 7789391063 - GSM1
 7789391268 - GSM2
 */
-char sendto[21] = "7789525137";
+char sendto[21] = "7789391063";
 // We default to using software serial. If you want to use hardware serial
 // (because softserial isnt supported) comment out the following three lines
 // and uncomment the HardwareSerial line
@@ -46,6 +45,7 @@ uint8_t type;
 volatile int8_t numsms;
 
 // Declare all global variables
+
 // Voltage Sensor
 double DivVoltage = 0;    // Voltage divider reading
 double SourceVoltage = 0; // Final voltage reading result
@@ -53,14 +53,12 @@ double SourceVoltage = 0; // Final voltage reading result
 double HallVoltage = 0; // Voltage reading of Hall Effect
 double HallAmps = 0;    // Current result from Hall Effect Sensor
 float Power = 0;
+
 // Temperature Sensor
 double TempVolt = 0; //previously volt
 double Temp = 0;     // previously temp
 float AtmTemp = 0;
 float SolTemp = 0;
-
-// Humidity Sensor
-double Humidity = 0; //humidity sensor value
 
 //Water Pump Sensor
 bool WaterBreakerFlag = false;
@@ -73,16 +71,10 @@ unsigned long Time;
 // String timestamp_GSM = "";
 RTC_DS3231 rtc;
 
-// Humidity Sensor
-/*
-    Pin Setup (from Arduino UNO pinout):
-    OUT D7
-    VCC is 5V
-*/
-DHT dht(7, DHT11);
 // Declare any global constants
 double RH = 1000; //test on a different prototype board    //981300;   // Voltage Divider High Resistance
 double RL = 1000; //test on a diffferent prototype board   //24743;    // Voltage Divider Low Resistance
+
 void setup()
 {
   //helps setting up the fona library
@@ -92,20 +84,11 @@ void setup()
   digitalWrite(FONA_POWER, LOW);
   delay(3000);
   while (!Serial)
-    ; // wait till serial gets initialized
+    ;                 // wait till serial gets initialized
   Serial.begin(4800); //baud rate
-  
+
   Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
-  
-  // -------------------------------------------
-  // Initializing Humidity Sensor
-  
-  Serial.println(F("Initializing Humidity Sensor"));
-  dht.begin();
-  
-  Serial.println(F("Humidity Sensor initialized"));
-  delay(1000);
-  
+
   // -------------------------------------------
   // Initializing DS3231 RTC
   /*
@@ -119,16 +102,17 @@ void setup()
   {
     Serial.println(F("Couldn't find RTC. Please sure DS3231 RTC module is setup correctly"));
     //don't do anything anymore
-    while(1);
+    while (1)
+      ;
   }
   Serial.println(F("RTC Timer initialized"));
   delay(1000);
   rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //adjusts RTC time to current time
   Serial.println(F("RTC Timer sync with real time"));
-  
+
   // -------------------------------------------
   // Initializing FONA
-  
+
   Serial.println(F("Welcome to Sustaingineering 3G TxRx."));
   Serial.println(F("Launching...."));
   fonaSerial->begin(4800);
@@ -136,7 +120,8 @@ void setup()
   {
     Serial.println(F("Cannot find FONA. Please try rebooting.")); //reboot arduino and fona if this shows up! (Should probably do this automatically for robustness)
     delay(1000);
-    while (1);
+    while (1)
+      ;
   }
   type = fona.type();
   Serial.println(F("FONA is OK!"));
@@ -155,13 +140,14 @@ void setup()
   if (!SIMFound)
   {
     Serial.println(F("SIM card could not be found. Please ensure that your SIM card is compatible with dual-band UMTS/HSDPA850/1900MHz WCDMA + HSDPA."));
-    while (1);
+    while (1)
+      ;
   }
 }
 void loop()
 {
   // Construct Real Time string
-      
+
   // -------------------------------------------
   // Sensing Data
   /*
@@ -173,45 +159,44 @@ void loop()
    SolTemp: A2
    WaterBreakerFlag: assigned from code
   */
-  
+
   //intermediate data value collected by arduino (will be used to calculated our final measured data values)
-  
+
   float sensorValue = analogRead(A2);
- 
+
   // Convert the analog reading ( which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue / 1023;
   voltage = sensorValue * 5000; //(in mv)
-  float volt = voltage - 1670; //(while cold conjuction is 22 degree
-  
+  float volt = voltage - 1670;  //(while cold conjuction is 22 degree
+
   // the voltage cross thermalcouple is 1.67v)
-  volt = volt / 150;                //(opamp apmplified 150 times)
+  volt = volt / 150; //(opamp apmplified 150 times)
 
   // ------------
-  
+
   //assigning all measured data
-  
+
   float temp = (volt) / 0.041 + 22; //( 1 degree = 0.0404 mv in K type )
-  VoltageDivider(); // voltage sensing <- updates LoadVoltage
-  HallEffect();     // current sensing <- updates HallAmps
-  Thermolcouple();  // temperature sensing <- updates Temp
-  HumiditySense(); // humidity sensing <- updates humidity editor
+  VoltageDivider();                 // voltage sensing <- updates LoadVoltage
+  HallEffect();                     // current sensing <- updates HallAmps
+  Thermolcouple();                  // temperature sensing <- updates Temp
   Power = SourceVoltage * HallAmps;
   SolTemp = ((temp > 1000) ? 1000 : temp); //this condition necessary to send for some reason (checks to makes sure thermocouple reading is within range to send)
   AtmTemp = Temp;
   WaterBreakerFlag = false;
-  
+
   delay(100); //not sure if this is necessary
 
-  // ------------------------------------------- 
+  // -------------------------------------------
   //Sending SMS
-  
+
   delay(1000);
-  
-  send_sms(SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, Humidity, WaterBreakerFlag);
+
+  send_sms(SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, WaterBreakerFlag);
 }
 
-void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, float Humdity, bool WaterBreakerFlag)
-{ 
+void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag)
+{
 
   //rtc time
 
@@ -223,20 +208,20 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, 
   String rtc_second = ((now.second() >= 10) ? (String)(now.second()) : "0" + (String)(now.second()));
 
   // --------------
-  
+
   // send an SMS!
   char message[0];
-    
+
   String str;
-  str = (String)(now.year()) + "/" + (String)(now.month()) + "/" + (String)(now.day()) + "-" + rtc_hour + ":" + rtc_minute + ":" + rtc_second + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(Humdity) + "," + (String)(WaterBreakerFlag);
+  str = (String)(now.year()) + "/" + (String)(now.month()) + "/" + (String)(now.day()) + "-" + rtc_hour + ":" + rtc_minute + ":" + rtc_second + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
 
   Serial.print("str content: ");
   Serial.println(str);
   str.toCharArray(message, 141);
-  
+
   Serial.print(F("Your message is: "));
   Serial.println(message);
-  
+
   while (fona.sendSMS(sendto, message) == 0)
   {
     Serial.println(F("SMS sending failed."));
@@ -245,21 +230,14 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, 
   Serial.println();
 }
 
-// Humidity Sensor
-void HumiditySense()
-{
-  Humidity = dht.readHumidity();
-  // delay(2000);
-}
-
 // Voltage Divider Sensor
 void VoltageDivider()
 {
   // Read Voltage at divider and convert to decimal
   int x = analogRead(A1);
-  DivVoltage = x * (5.0 / 1023.0);
-  // Final Source Voltage reading
-  SourceVoltage = (DivVoltage * (RH + RL)) / RL;
+  //  DivVoltage = x * (5.0 / 1023.0);
+  //  // Final Source Voltage reading
+  //  SourceVoltage = (DivVoltage * (RH + RL)) / RL;
 }
 
 // Hall Effect sensor

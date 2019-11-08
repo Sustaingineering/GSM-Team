@@ -43,11 +43,6 @@ volatile int8_t numsms;
 //we run the code/program. Then depending on the need, we can just keep deleting the recent message
 //that was just sent (either Delete#0 or Delete#1)
 
-//void delete_SMS();
-uint16_t readnumber();
-//char readBlocking();
-//void read_All_SMS();
-
 void setup()
 {
   //for initializing the GSM
@@ -163,13 +158,13 @@ void check_get_sms()
     }
     /*
        Data is sent in csv format. The data will appear as follows:
-       RTC Time, LoadVoltage, LoadCurrent, Power, AtmTemp, SolTemp, Humidity, WaterBreakerFlag
+       RTC Time, LoadVoltage, LoadCurrent, Power, AtmTemp, SolTemp, WaterBreakerFlag
     */
 
     //retrieve delimited values for use
     char *vars[6];
     vars[0] = strtok(replybuffer, ",");
-    for (int i = 1; i < 8; i++)
+    for (int i = 1; i < 7; i++)
       vars[i] = strtok(NULL, ",");
 
     //Serial print results
@@ -186,10 +181,8 @@ void check_get_sms()
     Serial.println(vars[4]);
     Serial.print(F("Solar Panel Temperature [^oC]: "));
     Serial.println(vars[5]);
-    Serial.print(F("Relative Humidity [%]: "));
-    Serial.println(vars[6]);
     Serial.print(F("Water Breaker Flag: "));
-    Serial.println(vars[7]);
+    Serial.println(vars[6]);
 
     //Since all messages are deleted in the beginning, we just need to delete the current message at index 0
 
