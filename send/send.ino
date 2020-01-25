@@ -14,12 +14,12 @@ volatile char ISR_Count = 0;
 #include "RTClib.h"
 #include <Wire.h>
 
-//IMPORTANT: either use 2 & 3 or 4 & 5 for the TX and RX respectively for Software Serial!
+//IMPORTANT: either use 2 & 3 or 4 & 5 for the TX and RX respectively for Software Serial, based on the connector pins on the GSM
 #define FONA_TX 4 //Soft serial port
 #define FONA_RX 5 //Soft serial port
 
-#define FONA_RST 9
-#define FONA_POWER 8
+#define FONA_RST 9//9 //just need a digital pin......
+#define FONA_POWER 10//8 //this has to be the clock 0 pin
 #define FONA_POWER_ON_TIME 180   /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 #define FONA_SINGLE_MESSAGE_DELAY_TIME 1000
@@ -31,7 +31,7 @@ List of Phone Numbers:
 7789391063 - GSM1
 7789391268 - GSM2
 */
-char sendto[21] = "7789391063";
+char sendto[21] = "7789525137";
 // We default to using software serial. If you want to use hardware serial
 // (because softserial isnt supported) comment out the following three lines
 // and uncomment the HardwareSerial line
