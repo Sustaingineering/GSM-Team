@@ -1,28 +1,24 @@
-//SG_FONA folder must be included in \Documents\Arduino\libraries
-//Arduino must be set to port 1. Go to device manager -> Ports(COM & LPT) -> Arduino Uno -> Properties -> Port Settings -> Advanced -> COM Port Number. Then re-plug the USB.
-//Serial may need to be set to 4800bps manually first. On my device, this was the default.
-//Serial Monitor must be set to Both NL & CR, as well as 115200 Baud
-//Many cell carriers do not support GSM. Only supported network may be Rogers (this will be shutting down soon)
-//For more on interrupts, see https://www.robotshop.com/letsmakerobots/arduino-101-timers-and-interrupts
+//list of libraries
+
 #include "SG_FONA.h"
-volatile char ISR_Count = 0;
-//Optional header file to enable I/O to the EEPROM memory
-/*  #include <EEPROM_R_W.h>
-    EEPROM_R_W eeprom = EEPROM_R_W(); */
-// Other Header files
 #include <SPI.h>
 #include "RTClib.h"
 #include <Wire.h>
+#include <SoftwareSerial.h>
 
-//IMPORTANT: either use 2 & 3 or 4 & 5 for the TX and RX respectively for Software Serial, based on the connector pins on the GSM
+//constants
+
+//use either pins 2 & 3 or 4 & 5 for the TX and RX respectively for Software Serial, based on the connector pins on the GSM
 #define FONA_TX 4 //Soft serial port
 #define FONA_RX 5 //Soft serial port
 
-#define FONA_RST 9//9 //just need a digital pin......
+#define FONA_RST 9 //just need a digital pin......
 #define FONA_POWER 10//8 //this has to be the clock 0 pin
 #define FONA_POWER_ON_TIME 180   /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 #define FONA_SINGLE_MESSAGE_DELAY_TIME 1000
+
+// -------------------------------------------
 
 /*
 List of Phone Numbers: 
@@ -31,24 +27,25 @@ List of Phone Numbers:
 7789391063 - GSM1
 7789391268 - GSM2
 */
+
 char sendto[21] = "7789525137";
-// We default to using software serial. If you want to use hardware serial
-// (because softserial isnt supported) comment out the following three lines
-// and uncomment the HardwareSerial line
-#include <SoftwareSerial.h>
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
-// Use this one for FONA 3G
 Adafruit_FONA_3G fona = Adafruit_FONA_3G(FONA_RST);
 uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0); // Is it for reading from serial port?
 uint8_t type;
 volatile int8_t numsms;
+
+// -------------------------------------------
 
 // Declare all global variables
 
 // Voltage Sensor
 double DivVoltage = 0;    // Voltage divider reading
 double SourceVoltage = 0; // Final voltage reading result
+double RH = 1000; //981300;   // Voltage Divider High Resistance
+double RL = 1000; //24743;    // Voltage Divider Low Resistance
+
 // Current Sensor
 double HallVoltage = 0; // Voltage reading of Hall Effect
 double HallAmps = 0;    // Current result from Hall Effect Sensor
@@ -68,16 +65,16 @@ bool WaterBreakerFlag = false;
 unsigned long Time;
 
 // RTC time
-// String timestamp_GSM = "";
 RTC_DS3231 rtc;
 
-// Declare any global constants
-double RH = 1000; //test on a different prototype board    //981300;   // Voltage Divider High Resistance
-double RL = 1000; //test on a diffferent prototype board   //24743;    // Voltage Divider Low Resistance
+// -------------------------------------------
 
 void setup()
 {
-  //helps setting up the fona library
+  // -------------------------------------------
+
+  //Adafruit FONA setup
+
   pinMode(FONA_POWER, OUTPUT);
   digitalWrite(FONA_POWER, HIGH);
   delay(FONA_POWER_ON_TIME);
@@ -90,13 +87,16 @@ void setup()
   Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
 
   // -------------------------------------------
-  // Initializing DS3231 RTC
+
+  // Initializing DS3231 RTC Module
+
   /*
     Pin Setup (from Arduino UNO pinout):
     SDA A4
     SCL A5
     VCC is 5V
   */
+
   Serial.println("Initializing RTC Timer ...");
   if (!rtc.begin())
   {
@@ -111,6 +111,7 @@ void setup()
   Serial.println(F("RTC Timer sync with real time"));
 
   // -------------------------------------------
+
   // Initializing FONA
 
   Serial.println(F("Welcome to Sustaingineering 3G TxRx."));
@@ -143,12 +144,15 @@ void setup()
     while (1)
       ;
   }
+
+  // -------------------------------------------
 }
 void loop()
 {
-  // Construct Real Time string
+  // Construct Real Time string to be sent
 
   // -------------------------------------------
+
   // Sensing Data
   /*
    Analog Pin Assignments for Measurement Variables
@@ -158,6 +162,7 @@ void loop()
    AtmTemp: A2
    SolTemp: A2
    WaterBreakerFlag: assigned from code
+   Real Time: A5 & A4
   */
 
   //intermediate data value collected by arduino (will be used to calculated our final measured data values)
@@ -230,6 +235,12 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, 
   Serial.println();
 }
 
+// -------------------------------------------
+
+//Sensor Functions
+
+// -------------------------------------------
+
 // Voltage Divider Sensor
 void VoltageDivider()
 {
@@ -240,6 +251,8 @@ void VoltageDivider()
   //  SourceVoltage = (DivVoltage * (RH + RL)) / RL;
 }
 
+// -------------------------------------------
+
 // Hall Effect sensor
 void HallEffect()
 {
@@ -249,6 +262,8 @@ void HallEffect()
   // Compute the current from the voltage reading equation
   HallAmps = (HallVoltage * 22.0) / 3.0 - (55.0 / 3.0);
 }
+
+// -------------------------------------------
 
 // Thermolcouple sensor
 void Thermolcouple()
