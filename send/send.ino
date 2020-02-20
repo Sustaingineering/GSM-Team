@@ -4,6 +4,7 @@
 #include <SPI.h>
 #include "RTClib.h"
 #include <Wire.h>
+#include <OneWire.h>
 #include <SoftwareSerial.h>
 
 //constants
@@ -12,8 +13,8 @@
 #define FONA_TX 4 //Soft serial port
 #define FONA_RX 5 //Soft serial port
 
-#define FONA_RST 9 //just need a digital pin......
-#define FONA_POWER 10//8 //this has to be the clock 0 pin
+#define FONA_RST 9               //just need a digital pin......
+#define FONA_POWER 10            //8 //this has to be the clock 0 pin
 #define FONA_POWER_ON_TIME 180   /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 #define FONA_SINGLE_MESSAGE_DELAY_TIME 1000
@@ -41,10 +42,10 @@ volatile int8_t numsms;
 // Declare all global variables
 
 // Voltage Sensor
-double DivVoltage = 0;    // Voltage divider reading
+double DivVoltage = 0;    // Voltage divider reading (for debugging purposes)
 double SourceVoltage = 0; // Final voltage reading result
-double RH = 1000000; //981300; // Voltage Divider High Resistance
-double RL = 25000; //24743; // Voltage Divider Low Resistance
+double RH = 1000000;      //981300; // Voltage Divider High Resistance
+double RL = 25000;        //24743; // Voltage Divider Low Resistance
 
 // Current Sensor
 double HallVoltage = 0; // Voltage reading of Hall Effect
@@ -52,10 +53,13 @@ double HallAmps = 0;    // Current result from Hall Effect Sensor
 float Power = 0;
 
 // Temperature Sensor
-double TempVolt = 0; //previously volt
-double Temp = 0;     // previously temp
-float AtmTemp = 0;
-float SolTemp = 0;
+double Temp = 0; // intermediate temperature calculation
+float SolTemp = 0; //solar panel temperature
+
+int DS18S20_Pin = 2; //DS18S20 Signal pin can be on digital 4 as well - don't overlap with the TX of the GSM
+char tmpstring[10];
+
+OneWire ds(DS18S20_Pin); // temperature chip i/o
 
 //Water Pump Sensor
 bool WaterBreakerFlag = false;
@@ -159,48 +163,29 @@ void loop()
    SourceVoltage: A1
    HallAmps: A0
    Power: calculation from code
-   AtmTemp: A2
-   SolTemp: A2
+   SolTemp: D2
    WaterBreakerFlag: assigned from code
-   Real Time: A5 & A4
+   Real Time: SCL-A5 & SDA-A4
   */
 
-  //intermediate data value collected by arduino (will be used to calculated our final measured data values)
-
-  float sensorValue = analogRead(A2);
-
-  // Convert the analog reading ( which goes from 0 - 1023) to a voltage (0 - 5V):
-  float voltage = sensorValue / 1023;
-  voltage = sensorValue * 5000; //(in mv)
-  float volt = voltage - 1670;  //(while cold conjuction is 22 degree
-
-  // the voltage cross thermalcouple is 1.67v)
-  volt = volt / 150; //(opamp apmplified 150 times)
-
-  // ------------
-
-  //assigning all measured data
-
-  float temp = (volt) / 0.041 + 22; //( 1 degree = 0.0404 mv in K type )
-  VoltageDivider();                 // voltage sensing <- updates LoadVoltage
-  HallEffect();                     // current sensing <- updates HallAmps
-  Thermolcouple();                  // temperature sensing <- updates Temp
+  VoltageDivider(); // voltage sensing <- updates LoadVoltage
+  HallEffect();     // current sensing <- updates HallAmps
+  Thermolcouple();  // temperature sensing <- updates Temp
   Power = SourceVoltage * HallAmps;
-  SolTemp = ((temp > 1000) ? 1000 : temp); //this condition necessary to send for some reason (checks to makes sure thermocouple reading is within range to send)
-  AtmTemp = Temp;
   WaterBreakerFlag = false;
 
   delay(100); //not sure if this is necessary
 
   // -------------------------------------------
+  
   //Sending SMS
 
   delay(1000);
 
-  send_sms(SourceVoltage, HallAmps, Power, AtmTemp, SolTemp, WaterBreakerFlag);
+  send_sms(SourceVoltage, HallAmps, Power, SolTemp, WaterBreakerFlag);
 }
 
-void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, float SolTemp, bool WaterBreakerFlag)
+void send_sms(float LoadVoltage, float LoadCurrent, float Power, float SolTemp, bool WaterBreakerFlag)
 {
 
   //rtc time
@@ -218,7 +203,7 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float AtmTemp, 
   char message[0];
 
   String str;
-  str = (String)(now.year()) + "/" + (String)(now.month()) + "/" + (String)(now.day()) + "-" + rtc_hour + ":" + rtc_minute + ":" + rtc_second + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(AtmTemp) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
+  str = (String)(now.year()) + "/" + (String)(now.month()) + "/" + (String)(now.day()) + "-" + rtc_hour + ":" + rtc_minute + ":" + rtc_second + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
 
   Serial.print("str content: ");
   Serial.println(str);
@@ -246,9 +231,9 @@ void VoltageDivider()
 {
   // Read Voltage at divider and convert to decimal
   int x = analogRead(A1);
-    DivVoltage = x * (5.0 / 1023.0);
-    // Final Source Voltage reading
-    SourceVoltage = (DivVoltage * (RH + RL)) / RL;
+  DivVoltage = x * (5.0 / 1023.0);
+  // Final Source Voltage reading
+  SourceVoltage = (DivVoltage * (RH + RL)) / RL;
 }
 
 // -------------------------------------------
@@ -268,22 +253,57 @@ void HallEffect()
 // Thermolcouple sensor
 void Thermolcouple()
 {
-  // Read sensor value and convert to mV
-  int x = analogRead(A2);
-  TempVolt = x * (5000.0 / 1023.0) + 25;
-  // Check if upper voltage bound
-  if (TempVolt > 2500)
+  float temperature = getTemp();
+  Temp = (temperature - 32) * 5 / 9;
+  SolTemp = ((Temp > 1000) ? 1000 : Temp); //this condition necessary to send for some reason (checks to makes sure thermocouple reading is within range to send)
+}
+
+float getTemp()
+{
+  //returns the temperature from one DS18S20 in DEG Celsius
+
+  byte data[12];
+  byte addr[8];
+
+  if (!ds.search(addr))
   {
-    double volt = TempVolt - 2500; // Assuming cold junction at 22 degree
-    volt = volt / 123;             // OpAmp amplified 150 times
-    Temp = (volt / 0.041) + 25;    // 0.0404 mv/degree in K type
+    //no more sensors on chain, reset search
+    ds.reset_search();
+    return -1000;
   }
-  // Else if lower bound
-  else
+
+  if (OneWire::crc8(addr, 7) != addr[7])
   {
-    double volt = 2500 - TempVolt; // Assuming cold junction at 22 degree
-    // The voltage cross thermolcouple is 1.67v)
-    volt = volt / 123;           // OpAmp apmplified 150 times
-    Temp = 25 - (volt / 0.0404); // 0.0404 mv/degree in K type
+    Serial.println("CRC is not valid!");
+    return -1000;
   }
+
+  if (addr[0] != 0x10 && addr[0] != 0x28)
+  {
+    Serial.print("Device is not recognized");
+    return -1000;
+  }
+
+  ds.reset();
+  ds.select(addr);
+  ds.write(0x44, 1); // start conversion, with parasite power on at the end
+
+  byte present = ds.reset();
+  ds.select(addr);
+  ds.write(0xBE); // Read Scratchpad
+
+  for (int i = 0; i < 9; i++)
+  { // we need 9 bytes
+    data[i] = ds.read();
+  }
+
+  ds.reset_search();
+
+  byte MSB = data[1];
+  byte LSB = data[0];
+
+  float tempRead = ((MSB << 8) | LSB); //using two's compliment
+  float TemperatureSum = tempRead / 16;
+
+  return (TemperatureSum * 18 + 5) / 10 + 32;
 }

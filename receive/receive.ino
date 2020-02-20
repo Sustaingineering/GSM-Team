@@ -162,9 +162,9 @@ void check_get_sms()
     */
 
     //retrieve delimited values for use
-    char *vars[6];
+    char *vars[5];
     vars[0] = strtok(replybuffer, ",");
-    for (int i = 1; i < 7; i++)
+    for (int i = 1; i < 6; i++)
       vars[i] = strtok(NULL, ",");
 
     //Serial print results
@@ -177,12 +177,12 @@ void check_get_sms()
     Serial.println(vars[2]);
     Serial.print(F("Power [W]: "));
     Serial.println(vars[3]);
-    Serial.print(F("Atmospheric Temperature [^oC]: "));
-    Serial.println(vars[4]);
+    // Serial.print(F("Atmospheric Temperature [^oC]: "));
+    // Serial.println(vars[4]);
     Serial.print(F("Solar Panel Temperature [^oC]: "));
-    Serial.println(vars[5]);
+    Serial.println(vars[4]);
     Serial.print(F("Water Breaker Flag: "));
-    Serial.println(vars[6]);
+    Serial.println(vars[5]);
 
     //Since all messages are deleted in the beginning, we just need to delete the current message at index 0
 
