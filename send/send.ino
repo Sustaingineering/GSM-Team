@@ -43,8 +43,8 @@ volatile int8_t numsms;
 // Voltage Sensor
 double DivVoltage = 0;    // Voltage divider reading
 double SourceVoltage = 0; // Final voltage reading result
-double RH = 1000; //981300;   // Voltage Divider High Resistance
-double RL = 1000; //24743;    // Voltage Divider Low Resistance
+double RH = 1000000; //981300; // Voltage Divider High Resistance
+double RL = 25000; //24743; // Voltage Divider Low Resistance
 
 // Current Sensor
 double HallVoltage = 0; // Voltage reading of Hall Effect
@@ -246,9 +246,9 @@ void VoltageDivider()
 {
   // Read Voltage at divider and convert to decimal
   int x = analogRead(A1);
-  //  DivVoltage = x * (5.0 / 1023.0);
-  //  // Final Source Voltage reading
-  //  SourceVoltage = (DivVoltage * (RH + RL)) / RL;
+    DivVoltage = x * (5.0 / 1023.0);
+    // Final Source Voltage reading
+    SourceVoltage = (DivVoltage * (RH + RL)) / RL;
 }
 
 // -------------------------------------------
