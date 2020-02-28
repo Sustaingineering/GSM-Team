@@ -14,7 +14,7 @@
 #define FONA_RX 5 //Soft serial port
 
 #define FONA_RST 9               //just need a digital pin......
-#define FONA_POWER 10            //8 //this has to be the clock 0 pin
+#define FONA_POWER 8            //this has to be the clock 0 pin or pin 8
 #define FONA_POWER_ON_TIME 180   /* 180ms*/
 #define FONA_POWER_OFF_TIME 1000 /* 1000ms*/
 #define FONA_SINGLE_MESSAGE_DELAY_TIME 1000
@@ -57,7 +57,6 @@ double Temp = 0; // intermediate temperature calculation
 float SolTemp = 0; //solar panel temperature
 
 int DS18S20_Pin = 2; //DS18S20 Signal pin can be on digital 4 as well - don't overlap with the TX of the GSM
-char tmpstring[10];
 
 OneWire ds(DS18S20_Pin); // temperature chip i/o
 
@@ -69,7 +68,7 @@ bool WaterBreakerFlag = false;
 unsigned long Time;
 
 // RTC time
-RTC_DS3231 rtc;
+//RTC_DS3231 rtc;
 
 // -------------------------------------------
 
@@ -79,6 +78,7 @@ void setup()
 
   //Adafruit FONA setup
 
+  //very important for the GSM to automatically send messages when powered on after powering off
   pinMode(FONA_POWER, OUTPUT);
   digitalWrite(FONA_POWER, HIGH);
   delay(FONA_POWER_ON_TIME);
@@ -86,7 +86,7 @@ void setup()
   delay(3000);
   while (!Serial)
     ;                 // wait till serial gets initialized
-  Serial.begin(4800); //baud rate
+  Serial.begin(115200); //baud rate
 
   Wire.begin(); // Initiate the Wire library and join the I2C bus as a master or slave
 
@@ -180,7 +180,7 @@ void loop()
   
   //Sending SMS
 
-  delay(1000);
+  delay(10000);
 
   send_sms(SourceVoltage, HallAmps, Power, SolTemp, WaterBreakerFlag);
 }
@@ -193,9 +193,9 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float SolTemp, 
   DateTime now = rtc.now(); //have to do this inside send function for continous successful rtc time data sending
 
   //fix hour, minute, and seconds format since they are only integers in the RTC library
-  String rtc_hour = ((now.hour() >= 10) ? (String)(now.hour()) : "0" + (String)(now.hour()));
-  String rtc_minute = ((now.minute() >= 10) ? (String)(now.minute()) : "0" + (String)(now.minute()));
-  String rtc_second = ((now.second() >= 10) ? (String)(now.second()) : "0" + (String)(now.second()));
+  // String rtc_hour = ((now.hour() >= 10) ? (String)(now.hour()) : "0" + (String)(now.hour()));
+  // String rtc_minute = ((now.minute() >= 10) ? (String)(now.minute()) : "0" + (String)(now.minute()));
+  // String rtc_second = ((now.second() >= 10) ? (String)(now.second()) : "0" + (String)(now.second()));
 
   // --------------
 
@@ -203,7 +203,8 @@ void send_sms(float LoadVoltage, float LoadCurrent, float Power, float SolTemp, 
   char message[0];
 
   String str;
-  str = (String)(now.year()) + "/" + (String)(now.month()) + "/" + (String)(now.day()) + "-" + rtc_hour + ":" + rtc_minute + ":" + rtc_second + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
+  str = (String)(now.unixtime()) + "," + (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
+//  str = (String)(LoadVoltage) + "," + (String)(LoadCurrent) + "," + (String)(Power) + "," + (String)(SolTemp) + "," + (String)(WaterBreakerFlag);
 
   Serial.print("str content: ");
   Serial.println(str);
